@@ -12,7 +12,8 @@
     "lint": "biome lint",
     "check": "biome check",
     "fix": "biome check . --write --unsafe",
-    "jasrac-collector": "node --require ts-node/register playwright/jasrac-collector.ts"
+    "jasrac-collector": "npx tsx playwright/jasrac-collector.ts",
+    "setup": "npx playwright install chromium && npx playwright install-deps"
   },
   "dependencies": {
     "@faker-js/faker": "^9.6.0",
@@ -59,6 +60,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "1.9.4",
+    "@playwright/test": "^1.52.0",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/encoding-japanese": "^2.2.1",
