@@ -51,7 +51,11 @@ export async function searchJasracInfo(
 
 			// プロセスIDをファイルに保存（キャンセル機能のため）
 			if (proc.pid) {
-				fs.writeFileSync(path.join(tempDir, "playwright-pid.txt"), proc.pid.toString(), "utf8");
+				fs.writeFileSync(
+					path.join(tempDir, "playwright-pid.txt"),
+					proc.pid.toString(),
+					"utf8",
+				);
 				console.log(`Playwrightプロセス起動 (PID: ${proc.pid})`);
 			}
 
@@ -143,25 +147,29 @@ export async function searchJasracInfo(
 						// タイムスタンプが無い場合や解析できない場合は、現在時刻と比較
 						const now = Date.now();
 						const thirtySecsAgo = now - 30000; // 30秒前
-						
+
 						// ログの中にタイムスタンプがある場合、それを抽出して比較
-						const timestampMatch = log.match(/\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/);
-						if (timestampMatch && timestampMatch[1]) {
+						const timestampMatch = log.match(
+							/\[(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2})/,
+						);
+						if (timestampMatch?.[1]) {
 							const logTime = new Date(timestampMatch[1]).getTime();
 							return logTime > thirtySecsAgo;
 						}
 						return true; // タイムスタンプが見つからない場合は最近のログとして扱う
 					});
-					
+
 					// 直近30秒以内にログが追加されている場合は、プロセスがまだ動いていると判断
 					if (recentLogs.length > 0) {
-						console.log("プロセスはまだ動作中のようです。タイムアウトを延長します。");
+						console.log(
+							"プロセスはまだ動作中のようです。タイムアウトを延長します。",
+						);
 						return; // タイムアウトを発生させない
 					}
 				} catch (error) {
 					console.error("ログファイルの確認中にエラーが発生:", error);
 				}
-				
+
 				proc.kill();
 				reject(
 					new Error(

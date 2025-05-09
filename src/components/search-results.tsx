@@ -17,7 +17,6 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "./ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
 	Table,
 	TableBody,
@@ -26,6 +25,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "./ui/table";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 interface SearchResultsProps {
 	results: JasracInfo[];
@@ -192,8 +192,17 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 														<TableCell>{result.workCode}</TableCell>
 														<TableCell>{result.title}</TableCell>
 														<TableCell>
-															<Badge variant="outline" className={result.nationality?.includes('内国') ? "bg-blue-50" : "bg-amber-50"}>
-																{result.nationality?.includes('内国') ? '内国作品' : '外国作品'}
+															<Badge
+																variant="outline"
+																className={
+																	result.nationality?.includes("内国")
+																		? "bg-blue-50"
+																		: "bg-amber-50"
+																}
+															>
+																{result.nationality?.includes("内国")
+																	? "内国作品"
+																	: "外国作品"}
 															</Badge>
 														</TableCell>
 														<TableCell>{result.lyricist}</TableCell>
@@ -203,26 +212,39 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 														<TableCell>{result.publisher || "-"}</TableCell>
 														<TableCell>
 															<div className="flex flex-wrap gap-1">
-																{result.usagePermissions?.performance?.concert && (
-																	<Badge variant="outline" className="bg-blue-50">
+																{result.usagePermissions?.performance
+																	?.concert && (
+																	<Badge
+																		variant="outline"
+																		className="bg-blue-50"
+																	>
 																		演奏
 																	</Badge>
 																)}
 																{result.usagePermissions?.reproduction
 																	?.recording && (
-																	<Badge variant="outline" className="bg-green-50">
+																	<Badge
+																		variant="outline"
+																		className="bg-green-50"
+																	>
 																		録音
 																	</Badge>
 																)}
 																{result.usagePermissions?.transmission
 																	?.broadcast && (
-																	<Badge variant="outline" className="bg-amber-50">
+																	<Badge
+																		variant="outline"
+																		className="bg-amber-50"
+																	>
 																		放送
 																	</Badge>
 																)}
 																{result.usagePermissions?.transmission
 																	?.distribution && (
-																	<Badge variant="outline" className="bg-purple-50">
+																	<Badge
+																		variant="outline"
+																		className="bg-purple-50"
+																	>
 																		配信
 																	</Badge>
 																)}
@@ -248,7 +270,9 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 									<div className="flex justify-center mb-4">
 										<div className="animate-spin h-10 w-10 border-4 border-blue-500 border-t-transparent rounded-full" />
 									</div>
-									<p className="text-gray-500">JASRACから情報を取得しています...</p>
+									<p className="text-gray-500">
+										JASRACから情報を取得しています...
+									</p>
 								</div>
 							)}
 						</CardContent>
@@ -260,8 +284,8 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 					<TsvValidator results={getSelectedResults()} />
 
 					<div className="mt-4 flex justify-start">
-						<Button 
-							variant="outline" 
+						<Button
+							variant="outline"
 							onClick={() => setActiveTab("search-results")}
 							className="flex items-center gap-2"
 						>
@@ -280,8 +304,17 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 							作品コード: {selectedDetail?.workCode}
 							{selectedDetail?.nationality && (
 								<span className="ml-4">
-									<Badge variant="outline" className={selectedDetail.nationality?.includes('内国') ? "bg-blue-50 text-blue-800" : "bg-amber-50 text-amber-800"}>
-										{selectedDetail.nationality?.includes('内国') ? '内国作品' : '外国作品'}
+									<Badge
+										variant="outline"
+										className={
+											selectedDetail.nationality?.includes("内国")
+												? "bg-blue-50 text-blue-800"
+												: "bg-amber-50 text-amber-800"
+										}
+									>
+										{selectedDetail.nationality?.includes("内国")
+											? "内国作品"
+											: "外国作品"}
 									</Badge>
 								</span>
 							)}
@@ -330,31 +363,32 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 							</div>
 
 							{/* 権利情報 */}
-							{selectedDetail.rightsInfo && selectedDetail.rightsInfo.length > 0 && (
-								<div>
-									<h3 className="font-semibold text-lg mb-2">権利情報</h3>
-									<Table>
-										<TableHeader>
-											<TableRow>
-												<TableHead>名前</TableHead>
-												<TableHead>役割</TableHead>
-												<TableHead>持分</TableHead>
-												<TableHead>団体</TableHead>
-											</TableRow>
-										</TableHeader>
-										<TableBody>
-											{selectedDetail.rightsInfo.map((right, index) => (
-												<TableRow key={index}>
-													<TableCell>{right.name}</TableCell>
-													<TableCell>{right.role}</TableCell>
-													<TableCell>{right.shares}</TableCell>
-													<TableCell>{right.society}</TableCell>
+							{selectedDetail.rightsInfo &&
+								selectedDetail.rightsInfo.length > 0 && (
+									<div>
+										<h3 className="font-semibold text-lg mb-2">権利情報</h3>
+										<Table>
+											<TableHeader>
+												<TableRow>
+													<TableHead>名前</TableHead>
+													<TableHead>役割</TableHead>
+													<TableHead>持分</TableHead>
+													<TableHead>団体</TableHead>
 												</TableRow>
-											))}
-										</TableBody>
-									</Table>
-								</div>
-							)}
+											</TableHeader>
+											<TableBody>
+												{selectedDetail.rightsInfo.map((right, index) => (
+													<TableRow key={index}>
+														<TableCell>{right.name}</TableCell>
+														<TableCell>{right.role}</TableCell>
+														<TableCell>{right.shares}</TableCell>
+														<TableCell>{right.society}</TableCell>
+													</TableRow>
+												))}
+											</TableBody>
+										</Table>
+									</div>
+								)}
 
 							{/* 利用可能分野 */}
 							<div>
@@ -368,12 +402,14 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 												<span>コンサート:</span>{" "}
 												<Badge
 													variant={
-														selectedDetail.usagePermissions?.performance?.concert
+														selectedDetail.usagePermissions?.performance
+															?.concert
 															? "default"
 															: "outline"
 													}
 													className={
-														selectedDetail.usagePermissions?.performance?.concert
+														selectedDetail.usagePermissions?.performance
+															?.concert
 															? "bg-green-100 text-green-800"
 															: "bg-red-100 text-red-800"
 													}
@@ -406,12 +442,14 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 												<span>カラオケ:</span>{" "}
 												<Badge
 													variant={
-														selectedDetail.usagePermissions?.performance?.karaoke
+														selectedDetail.usagePermissions?.performance
+															?.karaoke
 															? "default"
 															: "outline"
 													}
 													className={
-														selectedDetail.usagePermissions?.performance?.karaoke
+														selectedDetail.usagePermissions?.performance
+															?.karaoke
 															? "bg-green-100 text-green-800"
 															: "bg-red-100 text-red-800"
 													}
@@ -444,7 +482,8 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 															: "bg-red-100 text-red-800"
 													}
 												>
-													{selectedDetail.usagePermissions?.reproduction?.recording
+													{selectedDetail.usagePermissions?.reproduction
+														?.recording
 														? "可"
 														: "不可"}
 												</Badge>
@@ -494,7 +533,8 @@ export function SearchResults({ results, isLoading }: SearchResultsProps) {
 															: "bg-red-100 text-red-800"
 													}
 												>
-													{selectedDetail.usagePermissions?.transmission?.broadcast
+													{selectedDetail.usagePermissions?.transmission
+														?.broadcast
 														? "可"
 														: "不可"}
 												</Badge>

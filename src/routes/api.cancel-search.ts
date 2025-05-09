@@ -1,7 +1,7 @@
-import { createAPIFileRoute } from "@tanstack/react-start/api";
+import { exec } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { exec } from "node:child_process";
+import { createAPIFileRoute } from "@tanstack/react-start/api";
 
 // 実行中のPlaywrightプロセスをキャンセルするAPI
 export const APIRoute = createAPIFileRoute("/api/cancel-search")({
@@ -10,11 +10,11 @@ export const APIRoute = createAPIFileRoute("/api/cancel-search")({
 			// プロセスIDファイルのパス
 			const tempDir = path.join(process.cwd(), "temp");
 			const pidFilePath = path.join(tempDir, "playwright-pid.txt");
-			
+
 			// プロセスIDファイルが存在する場合
 			if (fs.existsSync(pidFilePath)) {
 				const pidContent = fs.readFileSync(pidFilePath, "utf8").trim();
-				
+
 				if (pidContent) {
 					// プロセスを終了するコマンドを実行
 					// SIGTERM はより穏やかな終了シグナル
@@ -36,13 +36,15 @@ export const APIRoute = createAPIFileRoute("/api/cancel-search")({
 							}
 						});
 					}
-					
+
 					// ログに追記
 					const logFile = path.join(tempDir, "playwright-logs.json");
 					if (fs.existsSync(logFile)) {
 						try {
 							const logs = JSON.parse(fs.readFileSync(logFile, "utf8"));
-							logs.push(`[システム] ユーザーによって検索処理がキャンセルされました (PID: ${pidContent})`);
+							logs.push(
+								`[システム] ユーザーによって検索処理がキャンセルされました (PID: ${pidContent})`,
+							);
 							fs.writeFileSync(logFile, JSON.stringify(logs), "utf8");
 						} catch (error) {
 							console.error("ログ更新エラー:", error);
@@ -50,7 +52,7 @@ export const APIRoute = createAPIFileRoute("/api/cancel-search")({
 					}
 				}
 			}
-			
+
 			return new Response(JSON.stringify({ success: true }), {
 				headers: { "Content-Type": "application/json" },
 			});
@@ -67,4 +69,4 @@ export const APIRoute = createAPIFileRoute("/api/cancel-search")({
 			);
 		}
 	},
-}); 
+});

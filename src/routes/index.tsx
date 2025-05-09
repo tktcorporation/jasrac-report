@@ -82,25 +82,23 @@ function App() {
 				setActiveTab("results");
 			} catch (error) {
 				console.error("JASRAC検索中にエラーが発生しました", error);
-				const errorMessage = error instanceof Error ? error.message : "不明なエラー";
-				
+				const errorMessage =
+					error instanceof Error ? error.message : "不明なエラー";
+
 				// JASRACサーバーからのタイムアウトエラーの場合、特別なメッセージを表示
 				if (errorMessage.includes("タイムアウト")) {
 					setSearchError(
-						`検索中にエラーが発生しました: ${errorMessage}。バックグラウンドプロセスが続行している場合は、下のログで進捗状況を確認できます。`
+						`検索中にエラーが発生しました: ${errorMessage}。バックグラウンドプロセスが続行している場合は、下のログで進捗状況を確認できます。`,
 					);
 					// タイムアウトエラーの場合もログポーリングを継続
 					return; // finallyブロックは実行されるが、ポーリングを停止しない
-				} else {
-					setSearchError(
-						`検索中にエラーが発生しました: ${errorMessage}`
-					);
 				}
+				setSearchError(`検索中にエラーが発生しました: ${errorMessage}`);
 			} finally {
 				// タイムアウトエラーの場合はポーリングを続行させるため、明示的に停止しない
 				const errorText = searchError || "";
 				const isTimeoutError = errorText.includes("タイムアウト");
-				
+
 				// エラーがタイムアウト以外かプロセスが正常終了した場合のみ
 				if (!isTimeoutError) {
 					// 処理完了後に最後のログを全て取得
@@ -153,7 +151,7 @@ function App() {
 			const response = await fetch("/api/cancel-search", {
 				method: "POST",
 			});
-			
+
 			if (response.ok) {
 				setSearchError("検索処理はキャンセルされました");
 				setIsPollingLogs(false);
@@ -174,13 +172,18 @@ function App() {
 	// プロセスが完了しているかチェックする（最新のログをチェック）
 	const isProcessCompleted = () => {
 		if (playwrightLogs.length === 0) return false;
-		
+
 		// 最後の5つのログメッセージをチェック
 		const lastLogs = playwrightLogs.slice(-5);
-		const completionKeywords = ["完了しました", "処理が終了", "検索完了", "終了コード 0"];
-		
-		return lastLogs.some(log => 
-			completionKeywords.some(keyword => log.includes(keyword))
+		const completionKeywords = [
+			"完了しました",
+			"処理が終了",
+			"検索完了",
+			"終了コード 0",
+		];
+
+		return lastLogs.some((log) =>
+			completionKeywords.some((keyword) => log.includes(keyword)),
 		);
 	};
 
@@ -225,10 +228,14 @@ function App() {
 							<Terminal className="h-4 w-4" />
 							<h3 className="font-medium">Playwright実行ログ</h3>
 							{isPollingLogs && (
-								<span className="text-xs bg-blue-600 px-2 py-0.5 rounded-full">自動更新中</span>
+								<span className="text-xs bg-blue-600 px-2 py-0.5 rounded-full">
+									自動更新中
+								</span>
 							)}
 							{isProcessCompleted() && (
-								<span className="text-xs bg-green-600 px-2 py-0.5 rounded-full">完了</span>
+								<span className="text-xs bg-green-600 px-2 py-0.5 rounded-full">
+									完了
+								</span>
 							)}
 						</div>
 						<div className="flex items-center gap-2">
