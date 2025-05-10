@@ -352,8 +352,6 @@ async function executeSearch(page: Page, song: SongInfo): Promise<JasracInfo | n
   // テーブル内のすべてのリンクとその行の情報を取得
   const rows = await page.$$('table.search-result tbody tr:not(:first-child)'); // ヘッダー行をスキップ
   console.log(`検索結果: ${rows.length}行`);
-
-  console.log('検索結果の行のHTML:', await rows.map(async (row) => await row.innerHTML()));
   
   if (rows.length === 0) {
     await debugPageState(page, '検索結果の行が見つかりません');
@@ -597,12 +595,6 @@ async function processDetailPage(newPage: Page, song: SongInfo): Promise<JasracI
         // テーブル内の全ての行を取得（より堅牢なセレクタを使用）
         const rows = await newPage.$$('table.detail tr');
         console.log(`テーブル内の行数: ${rows.length}`);
-        
-        // テーブルの構造を確認するため、各行のHTMLをログ出力
-        for (let i = 0; i < Math.min(rows.length, 3); i++) {
-          const rowHtml = await newPage.evaluate(el => el.outerHTML, rows[i]);
-          console.log(`行 ${i+1} のHTML: ${rowHtml}`);
-        }
         
         // ヘッダー行をスキップして各行を処理
         for (let i = 2; i < rows.length; i++) {
