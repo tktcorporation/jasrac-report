@@ -1,15 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Music, TableIcon, Terminal, ChevronDown, ChevronUp } from "lucide-react";
+import { Music, TableIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SearchResults } from "../components/search-results";
 import { SongInputForm } from "../components/song-input-form";
 import { getPlaywrightLogs, searchJasracInfo } from "../lib/jasrac-bridge";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
-import { 
-	Collapsible, 
-	CollapsibleContent, 
-	CollapsibleTrigger 
-} from "../components/ui/collapsible";
+import { PlaywrightLogsPanel } from "../components/playwright-logs-panel";
 
 export const Route = createFileRoute("/")({
 	component: App,
@@ -26,11 +22,7 @@ function App() {
 	const [playwrightLogs, setPlaywrightLogs] = useState<string[]>([]);
 	const [isPollingLogs, setIsPollingLogs] = useState<boolean>(false);
 	const [showLogs, setShowLogs] = useState<boolean>(false);
-	const logsContainerRef = useRef<HTMLDivElement>(null);
-
-	// ログの折りたたみ状態を管理
-	const [isLogsOpen, setIsLogsOpen] = useState(true);
-
+	
 	// ログを取得する関数
 	const fetchPlaywrightLogs = useCallback(async () => {
 		try {
@@ -145,14 +137,6 @@ function App() {
 		};
 	}, [isPollingLogs, fetchPlaywrightLogs]);
 
-	// ログが更新されたら自動スクロール
-	useEffect(() => {
-		if (logsContainerRef.current && playwrightLogs.length > 0) {
-			const container = logsContainerRef.current;
-			container.scrollTop = container.scrollHeight;
-		}
-	}, [playwrightLogs]);
-
 	// ログ表示エリアを閉じる
 	const closeLogs = () => {
 		setShowLogs(false);
@@ -180,24 +164,6 @@ function App() {
 	// ログを手動で更新する
 	const refreshLogs = async () => {
 		await fetchPlaywrightLogs();
-	};
-
-	// プロセスが完了しているかチェックする（最新のログをチェック）
-	const isProcessCompleted = () => {
-		if (playwrightLogs.length === 0) return false;
-
-		// 最後の5つのログメッセージをチェック
-		const lastLogs = playwrightLogs.slice(-5);
-		const completionKeywords = [
-			"完了しました",
-			"処理が終了",
-			"検索完了",
-			"終了コード 0",
-		];
-
-		return lastLogs.some((log) =>
-			completionKeywords.some((keyword) => log.includes(keyword)),
-		);
 	};
 
 	// 同じ作品コードの楽曲を一つにまとめる関数
@@ -240,13 +206,6 @@ function App() {
 		return Array.from(workCodeMap.values());
 	};
 
-	// プロセスが完了したときにログを折りたたむ
-	useEffect(() => {
-		if (isProcessCompleted()) {
-			setIsLogsOpen(false);
-		}
-	}, [playwrightLogs]);
-
 	return (
 		<div className="container mx-auto px-4 py-8">
 			<h1 className="text-3xl font-bold mb-6 text-center">
@@ -280,76 +239,6 @@ function App() {
 				</div>
 			</div>
 
-			{/* Playwrightログ表示エリア - 折りたたみ可能に変更 */}
-			<div className={`mb-6 bg-slate-900 text-slate-100 p-4 rounded-md ${showLogs ? "" : "hidden"}`}>
-				<Collapsible open={isLogsOpen} onOpenChange={setIsLogsOpen}>
-					<div className="flex justify-between items-center mb-2">
-						<div className="flex items-center gap-2">
-							<CollapsibleTrigger className="flex items-center hover:text-blue-400">
-								{isLogsOpen ? 
-									<ChevronUp className="h-4 w-4 mr-2" /> : 
-									<ChevronDown className="h-4 w-4 mr-2" />
-								}
-								<Terminal className="h-4 w-4" />
-								<h3 className="font-medium ml-2">Playwright実行ログ</h3>
-							</CollapsibleTrigger>
-							
-							{isPollingLogs && (
-								<span className="text-xs bg-blue-600 px-2 py-0.5 rounded-full ml-2">
-									自動更新中
-								</span>
-							)}
-							{isProcessCompleted() && (
-								<span className="text-xs bg-green-600 px-2 py-0.5 rounded-full ml-2">
-									完了
-								</span>
-							)}
-						</div>
-						<div className="flex items-center gap-2">
-							{isPollingLogs && (
-								<button
-									onClick={cancelSearch}
-									className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded"
-								>
-									キャンセル
-								</button>
-							)}
-							<button
-								onClick={refreshLogs}
-								className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded mr-2"
-							>
-								更新
-							</button>
-							<button
-								onClick={closeLogs}
-								className="text-slate-400 hover:text-slate-100"
-							>
-								×
-							</button>
-						</div>
-					</div>
-					
-					<CollapsibleContent>
-						<div
-							className="h-48 overflow-y-auto p-2 bg-slate-950 rounded"
-							ref={logsContainerRef}
-						>
-							{playwrightLogs.length > 0 ? (
-								<ul className="space-y-1 font-mono text-sm">
-									{playwrightLogs.map((log, index) => (
-										<li key={index} className="break-all">
-											{log}
-										</li>
-									))}
-								</ul>
-							) : (
-								<p className="text-slate-500 italic">ログはまだありません。</p>
-							)}
-						</div>
-					</CollapsibleContent>
-				</Collapsible>
-			</div>
-
 			{/* アクティブなタブに応じたコンテンツ表示 */}
 			{activeTab === "input" && !isLoading && (
 				<SongInputForm onSearch={searchJasrac} isLoading={isLoading} />
@@ -362,6 +251,16 @@ function App() {
 							{searchError}
 						</div>
 					) : null}
+
+					{/* Playwright実行ログ - 検索結果タブでのみ表示 */}
+					<PlaywrightLogsPanel
+						logs={playwrightLogs}
+						isPolling={isPollingLogs}
+						showLogs={showLogs}
+						onCancel={cancelSearch}
+						onRefresh={refreshLogs}
+						onClose={closeLogs}
+					/>
 
 					<SearchResults 
 						results={jasracResults} 

@@ -2,7 +2,6 @@ import { Eye, FileText, Info } from "lucide-react";
 import { useEffect, useState } from "react";
 import { convertToTsv } from "../lib/jasrac-bridge";
 import type { JasracInfo } from "../lib/jasrac-types";
-import { PlaywrightLogs } from "./playwright-logs";
 import { TsvValidator } from "./tsv-validator";
 import { Badge } from "./ui/badge";
 import { Button } from "./ui/button";
@@ -791,16 +790,6 @@ export function SearchResults({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
-
-			{/* Playwrightのログを表示 */}
-			<div className={playwrightLogs.length > 0 ? "" : "hidden"}>
-				<PlaywrightLogs 
-					logs={playwrightLogs} 
-					isLoading={isLoading} 
-					isPolling={isPollingLogs}
-					isCompleted={searchProgress === 100}
-				/>
-			</div>
 		</div>
 	);
 }
