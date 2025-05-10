@@ -29,7 +29,7 @@ export function PlaywrightLogs({
 		if (logsEndRef.current && isOpen) {
 			logsEndRef.current.scrollIntoView({ behavior: "smooth" });
 		}
-	}, [logs, isOpen]);
+	}, [isOpen]);
 
 	// 検索完了時に自動的に折りたたむ
 	useEffect(() => {
@@ -77,7 +77,7 @@ export function PlaywrightLogs({
 									<>
 										{logs.map((log, i) => (
 											<div
-												key={i}
+												key={`log-${i}-${log.substring(0, 10).replace(/\s+/g, "")}`}
 												className={
 													log.includes("[エラー]")
 														? "text-red-400"

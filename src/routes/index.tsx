@@ -40,21 +40,23 @@ function App() {
 	const searchJasrac = useCallback(
 		async (songList: SongInfo[]) => {
 			if (songList.length === 0) {
-				alert("検索する曲が登録されていません");
+				setSearchError("検索する曲が入力されていません");
 				return;
 			}
 
+			setActiveTab("results");
 			setIsLoading(true);
+			setIsPollingLogs(true);
 			setSearchError("");
-			setPlaywrightLogs([]); // ログをクリア
-			setJasracResults([]); // 前回の検索結果をクリア
-			setIsPollingLogs(true); // ログのポーリングを開始
-			setShowLogs(true); // ログ表示を有効化
-			setActiveTab("results"); // 検索実行時に検索結果タブに切り替え
+			setShowLogs(true);
 
 			try {
-				// バックエンドAPIを呼び出し
-				const response = await fetch("/api/search-jasrac", {
+				// 前回の検索結果をクリア
+				setJasracResults([]);
+				setPlaywrightLogs([]);
+
+				// APIリクエスト
+				const response = await fetch("/api/search", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -63,61 +65,27 @@ function App() {
 				});
 
 				if (!response.ok) {
-					const errorData = await response.json().catch(() => ({}));
-					throw new Error(errorData.message || `API Error: ${response.status}`);
-				}
-
-				const data = await response.json();
-
-				if (!data || data.length === 0) {
-					setSearchError(
-						"検索結果が見つかりませんでした。曲名を確認して再度お試しください。",
-					);
+					const errorData = await response.json();
+					if (errorData?.error) {
+						setSearchError(errorData.error);
+					} else {
+						setSearchError("検索中にエラーが発生しました");
+					}
 					return;
 				}
 
-				// 同じ作品コードの重複を排除
-				const uniqueResults = removeDuplicateWorkCodes(data);
-				console.log(
-					`検索結果: ${data.length}件 → 重複排除後: ${uniqueResults.length}件`,
-				);
-
-				// 結果を設定
-				setJasracResults(uniqueResults);
-
-				// 検索結果タブに切り替え
-				setActiveTab("results");
-			} catch (error) {
-				console.error("JASRAC検索中にエラーが発生しました", error);
-				const errorMessage =
-					error instanceof Error ? error.message : "不明なエラー";
-
-				// JASRACサーバーからのタイムアウトエラーの場合、特別なメッセージを表示
-				if (errorMessage.includes("タイムアウト")) {
-					setSearchError(
-						`検索中にエラーが発生しました: ${errorMessage}。バックグラウンドプロセスが続行している場合は、下のログで進捗状況を確認できます。`,
-					);
-					// タイムアウトエラーの場合もログポーリングを継続
-					return; // finallyブロックは実行されるが、ポーリングを停止しない
-				}
-				setSearchError(`検索中にエラーが発生しました: ${errorMessage}`);
-			} finally {
-				// タイムアウトエラーの場合はポーリングを続行させるため、明示的に停止しない
-				const errorText = searchError || "";
-				const isTimeoutError = errorText.includes("タイムアウト");
-
-				// エラーがタイムアウト以外かプロセスが正常終了した場合のみ
-				if (!isTimeoutError) {
-					// 処理完了後に最後のログを全て取得
+				const result = await response.json();
+				if (result.message === "検索開始") {
+					// ポーリングを開始
 					await fetchPlaywrightLogs();
-					setIsPollingLogs(false); // ポーリングを停止
-					setIsLoading(false);
 				} else {
-					// タイムアウトエラーの場合は、ログポーリングを継続
-					await fetchPlaywrightLogs(); // 最新ログを取得
-					// ポーリングは継続したまま、ローディング表示のみ非表示にする
-					setIsLoading(false);
+					setSearchError("検索の開始に失敗しました");
 				}
+			} catch (error) {
+				console.error("Error searching JASRAC:", error);
+				setSearchError("API通信中にエラーが発生しました");
+			} finally {
+				setIsLoading(false);
 			}
 		},
 		[fetchPlaywrightLogs],
@@ -181,7 +149,8 @@ function App() {
 				workCodeMap.set(workCode, result);
 			} else {
 				// すでに同じ作品コードの楽曲が存在する場合
-				const existing = workCodeMap.get(workCode)!;
+				const existing = workCodeMap.get(workCode);
+				if (!existing) continue;
 
 				// alternativesに情報を追加（もし存在して重複していなければ）
 				if (result.alternatives && result.alternatives.length > 0) {
@@ -220,6 +189,7 @@ function App() {
 					{/* 検索実行中は曲情報入力タブを表示しない */}
 					{!isLoading && (
 						<button
+							type="button"
 							className={`px-4 py-2 font-medium ${activeTab === "input" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"}`}
 							onClick={() => setActiveTab("input")}
 						>
@@ -230,6 +200,7 @@ function App() {
 						</button>
 					)}
 					<button
+						type="button"
 						className={`px-4 py-2 font-medium ${activeTab === "results" ? "text-blue-600 border-b-2 border-blue-600" : "text-gray-500"}`}
 						onClick={() => setActiveTab("results")}
 					>

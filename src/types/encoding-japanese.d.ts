@@ -14,7 +14,7 @@ declare module "encoding-japanese" {
 		},
 	): string;
 
-	export function escape(data: string, form: string): string;
+	export function encodeEscape(data: string, form: string): string;
 
 	export function stringToCode(string: string): number[];
 

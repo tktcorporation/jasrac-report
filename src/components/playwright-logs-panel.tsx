@@ -1,5 +1,5 @@
 import { ChevronDown, ChevronUp, Terminal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
 	Collapsible,
 	CollapsibleContent,
@@ -28,7 +28,7 @@ export function PlaywrightLogsPanel({
 	const logsContainerRef = useRef<HTMLDivElement>(null);
 
 	// プロセスが完了しているかチェックする（最新のログをチェック）
-	const isProcessCompleted = () => {
+	const isProcessCompleted = useCallback(() => {
 		if (logs.length === 0) return false;
 
 		// 最後の5つのログメッセージをチェック
@@ -43,7 +43,7 @@ export function PlaywrightLogsPanel({
 		return lastLogs.some((log) =>
 			completionKeywords.some((keyword) => log.includes(keyword)),
 		);
-	};
+	}, [logs]);
 
 	// ログが更新されたら自動スクロール
 	useEffect(() => {
@@ -58,7 +58,7 @@ export function PlaywrightLogsPanel({
 		if (isProcessCompleted()) {
 			setIsOpen(false);
 		}
-	}, [logs]);
+	}, [isProcessCompleted]);
 
 	if (!showLogs) return null;
 
@@ -91,6 +91,7 @@ export function PlaywrightLogsPanel({
 					<div className="flex items-center gap-2">
 						{isPolling && (
 							<button
+								type="button"
 								onClick={onCancel}
 								className="text-xs bg-red-600 hover:bg-red-700 px-2 py-1 rounded"
 							>
@@ -98,12 +99,14 @@ export function PlaywrightLogsPanel({
 							</button>
 						)}
 						<button
+							type="button"
 							onClick={onRefresh}
 							className="text-xs bg-slate-700 hover:bg-slate-600 px-2 py-1 rounded mr-2"
 						>
 							更新
 						</button>
 						<button
+							type="button"
 							onClick={onClose}
 							className="text-slate-400 hover:text-slate-100"
 						>
@@ -120,7 +123,10 @@ export function PlaywrightLogsPanel({
 						{logs.length > 0 ? (
 							<ul className="space-y-1 font-mono text-sm">
 								{logs.map((log, index) => (
-									<li key={index} className="break-all">
+									<li
+										key={`log-${index}-${log.substring(0, 10).replace(/\s+/g, "")}`}
+										className="break-all"
+									>
 										{log}
 									</li>
 								))}

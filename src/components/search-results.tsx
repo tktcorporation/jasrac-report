@@ -350,7 +350,7 @@ export function SearchResults({
 											</TableHeader>
 											<TableBody>
 												{results.map((result, index) => (
-													<TableRow key={index}>
+													<TableRow key={`result-${result.workCode}`}>
 														<TableCell>
 															<Checkbox
 																checked={!!selectedItems[index]}
@@ -465,7 +465,8 @@ export function SearchResults({
 																				{result.alternatives.map(
 																					(alt, altIdx) => (
 																						<button
-																							key={altIdx}
+																							type="button"
+																							key={`alt-${result.workCode}-${alt.workCode}`}
 																							className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
 																							onClick={() => {
 																								replaceResultWithAlternative(
@@ -614,7 +615,7 @@ export function SearchResults({
 											</TableHeader>
 											<TableBody>
 												{selectedDetail.rightsInfo.map((right, index) => (
-													<TableRow key={index}>
+													<TableRow key={`right-${index}-${right.name}`}>
 														<TableCell>{right.name}</TableCell>
 														<TableCell>{right.role}</TableCell>
 														<TableCell>{right.shares}</TableCell>

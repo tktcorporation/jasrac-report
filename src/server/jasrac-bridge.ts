@@ -251,7 +251,8 @@ function removeDuplicateWorkCodes(results: JasracInfo[]): JasracInfo[] {
 			workCodeMap.set(workCode, result);
 		} else {
 			// すでに同じ作品コードの楽曲が存在する場合
-			const existing = workCodeMap.get(workCode)!;
+			const existing = workCodeMap.get(workCode);
+			if (!existing) continue;
 
 			// alternativesに情報を追加（もし存在して重複していなければ）
 			if (result.alternatives && result.alternatives.length > 0) {

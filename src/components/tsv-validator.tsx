@@ -53,10 +53,17 @@ interface TsvValidatorProps {
 	results: JasracInfo[];
 }
 
-// TSVデータの型定義
 interface TsvRowData {
 	[key: string]: string;
 }
+
+// _jasracFieldsプロパティのための型
+interface JasracFields {
+	_jasracFields?: Record<string, boolean>;
+}
+
+// 完全な行データの型（TypeScriptの型システムでのみ使用）
+type TsvRowDataComplete = TsvRowData & JasracFields;
 
 export function TsvValidator({ results }: TsvValidatorProps) {
 	const [filename, setFilename] = useState<string>(
@@ -85,7 +92,7 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 			const jasracFields: Record<string, boolean> = {};
 
 			// すべての期待されるヘッダーに対して初期値を設定
-			expectedHeaders.forEach((header) => {
+			for (const header of expectedHeaders) {
 				const rule = columnRules[header];
 				// 固定値があれば使用
 				if (rule?.fixedValue) {
@@ -99,7 +106,7 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 				else {
 					rowData[header] = "";
 				}
-			});
+			}
 
 			// JASRAC検索結果からのデータで上書き
 			rowData.インターフェイスキーコード = (index + 1).toString();
@@ -137,7 +144,8 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 			}
 
 			// JASRACフィールド情報を保持
-			(rowData as any)._jasracFields = jasracFields;
+			// @ts-ignore - _jasracFieldsプロパティはTsvRowDataの型定義には存在しませんが、実行時に追加します
+			rowData._jasracFields = jasracFields;
 
 			return rowData;
 		});
@@ -175,7 +183,7 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 		// 各行のデータを検証
 		data.forEach((row, rowIndex) => {
 			// 各カラムをルールに従って検証
-			Object.entries(row).forEach(([column, value]) => {
+			for (const [column, value] of Object.entries(row)) {
 				const rule = columnRules[column];
 				if (!rule) return;
 
@@ -241,7 +249,7 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 						message: `有効な値は「${rule.validValues.join("、")}」のいずれかです`,
 					});
 				}
-			});
+			}
 		});
 
 		// 検証結果を設定
@@ -431,9 +439,9 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 						<Table>
 							<TableHeader>
 								<TableRow>
-									{expectedHeaders.map((header, index) => (
+									{expectedHeaders.map((header) => (
 										<TableHead
-											key={index}
+											key={`header-${header}`}
 											className="px-2 py-1 text-xs whitespace-nowrap"
 										>
 											<TooltipProvider>
@@ -487,8 +495,10 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 																)}
 																{/* JASRACから取得した項目であることを示す表示を追加 */}
 																{tsvData.length > 0 &&
-																	(tsvData[0] as any)._jasracFields &&
-																	(tsvData[0] as any)._jasracFields[header] && (
+																	// @ts-ignore - _jasracFieldsプロパティにアクセス
+																	tsvData[0]._jasracFields &&
+																	// @ts-ignore - _jasracFieldsプロパティにアクセス
+																	tsvData[0]._jasracFields[header] && (
 																		<p className="text-sm text-blue-600">
 																			JASRACから取得した情報
 																		</p>
@@ -504,7 +514,9 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 							</TableHeader>
 							<TableBody>
 								{tsvData.slice(0, showRowCount).map((row, rowIndex) => (
-									<TableRow key={rowIndex}>
+									<TableRow
+										key={`row-${rowIndex}-${row.インターフェイスキーコード || rowIndex}`}
+									>
 										{expectedHeaders.map((header, cellIndex) => {
 											const value = row[header] || "";
 											const rule = columnRules[header];
@@ -528,7 +540,9 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 											}
 
 											// JASRACから取得したデータかどうかを判定
-											const jasracFields = (row as any)._jasracFields || {};
+											// @ts-ignore - _jasracFieldsプロパティにアクセス
+											const jasracFields = row._jasracFields || {};
+											// @ts-ignore - 型エラーを無視
 											const isJasracField = jasracFields[header] === true;
 
 											// 入力可能かを判定（isReadOnlyプロパティを使用）
@@ -540,7 +554,7 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 
 											return (
 												<TableCell
-													key={cellIndex}
+													key={`cell-${rowIndex}-${header}`}
 													className={`p-1 ${isError ? "bg-red-50" : ""}`}
 												>
 													{isEditable ? (
@@ -606,7 +620,9 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 								</TableHeader>
 								<TableBody>
 									{dataValidationErrors.map((error, index) => (
-										<TableRow key={index}>
+										<TableRow
+											key={`error-${index}-${error.row}-${error.column}`}
+										>
 											<TableCell>{error.row}</TableCell>
 											<TableCell>{error.column}</TableCell>
 											<TableCell>{error.message}</TableCell>
@@ -690,7 +706,14 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 							<Download className="h-4 w-4" />
 							ファイルとしてエクスポート
 						</Button>
-						<a ref={downloadLinkRef} className="hidden" />
+						<a
+							ref={downloadLinkRef}
+							className="hidden"
+							href="./"
+							download="jasrac-data.txt"
+						>
+							ダウンロード
+						</a>
 					</div>
 				</CardContent>
 				<CardFooter className="text-sm text-gray-500">
@@ -705,7 +728,11 @@ export function TsvValidator({ results }: TsvValidatorProps) {
 							<h3 className="font-medium">全体注記:</h3>
 							<ul className="list-disc pl-5 space-y-1">
 								{generalNotes.map((note, index) => (
-									<li key={index}>{note.note}</li>
+									<li
+										key={`note-${index}-${note.note.substring(0, 10).replace(/\s+/g, "")}`}
+									>
+										{note.note}
+									</li>
 								))}
 							</ul>
 						</div>

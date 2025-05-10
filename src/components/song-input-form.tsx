@@ -1,4 +1,4 @@
-import { Clipboard, Search } from "lucide-react";
+import { Clipboard, Edit, Search, Trash } from "lucide-react";
 import { useCallback, useState } from "react";
 import type { SongInfo } from "../lib/jasrac-types";
 import { Button } from "./ui/button";
@@ -229,7 +229,7 @@ export function SongInputForm({ onSearch, isLoading }: SongInputFormProps) {
 								</TableHeader>
 								<TableBody>
 									{songList.map((song, index) => (
-										<TableRow key={index}>
+										<TableRow key={`song-${song.title}-${index}`}>
 											<TableCell>{song.title}</TableCell>
 											<TableCell>{song.artist || "-"}</TableCell>
 											<TableCell>{song.composer || "-"}</TableCell>
