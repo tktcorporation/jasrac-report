@@ -791,6 +791,16 @@ export function SearchResults({
 					</DialogFooter>
 				</DialogContent>
 			</Dialog>
+
+			{/* Playwrightのログを表示 */}
+			<div className={playwrightLogs.length > 0 ? "" : "hidden"}>
+				<PlaywrightLogs 
+					logs={playwrightLogs} 
+					isLoading={isLoading} 
+					isPolling={isPollingLogs}
+					isCompleted={searchProgress === 100}
+				/>
+			</div>
 		</div>
 	);
 }
