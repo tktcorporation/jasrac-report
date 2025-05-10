@@ -22,6 +22,8 @@ function App() {
 	const [playwrightLogs, setPlaywrightLogs] = useState<string[]>([]);
 	const [isPollingLogs, setIsPollingLogs] = useState<boolean>(false);
 	const [showLogs, setShowLogs] = useState<boolean>(false);
+	const [isPollingResults, setIsPollingResults] = useState<boolean>(false);
+	const [hasSearchStarted, setHasSearchStarted] = useState<boolean>(false);
 
 	// ログを取得する関数
 	const fetchPlaywrightLogs = useCallback(async () => {
@@ -30,9 +32,51 @@ function App() {
 			if (response.ok) {
 				const logs = await response.json();
 				setPlaywrightLogs(logs);
+
+				// 検索が完了したかどうかを確認するロジック
+				// 「JASRACデータ収集に成功しました」または「処理が完了しました」などの文字列があれば完了とみなす
+				const isCompleted = logs.some(
+					(log: string) =>
+						log.includes("処理が完了しました") ||
+						log.includes("JSONファイルを保存しました") ||
+						log.includes("JASRACデータ収集に成功") ||
+						log.includes("終了コード 0"),
+				);
+
+				if (isCompleted && hasSearchStarted) {
+					console.log("ログから検索完了を検出しました");
+					// 検索結果のポーリングを開始
+					setIsPollingResults(true);
+				}
 			}
 		} catch (error) {
 			console.error("ログ取得エラー:", error);
+		}
+	}, [hasSearchStarted]);
+
+	// 検索結果を取得する関数
+	const fetchSearchResults = useCallback(async () => {
+		try {
+			const response = await fetch("/api/jasrac-results");
+			if (response.ok) {
+				const results = await response.json();
+				console.log("検索結果を取得しました:", results);
+
+				if (Array.isArray(results) && results.length > 0) {
+					// 検索が完了し、結果が取得できた場合
+					setJasracResults(results);
+					// ポーリングを停止
+					setIsPollingResults(false);
+					setIsPollingLogs(false);
+				}
+			} else if (response.status === 404) {
+				// 結果がまだない場合は待機
+				console.log("検索結果はまだありません。待機中...");
+			} else {
+				console.error("検索結果取得エラー:", response.status);
+			}
+		} catch (error) {
+			console.error("検索結果取得中にエラー:", error);
 		}
 	}, []);
 
@@ -47,8 +91,10 @@ function App() {
 			setActiveTab("results");
 			setIsLoading(true);
 			setIsPollingLogs(true);
+			setIsPollingResults(false);
 			setSearchError("");
 			setShowLogs(true);
+			setHasSearchStarted(true);
 
 			try {
 				// 前回の検索結果をクリア
@@ -56,7 +102,7 @@ function App() {
 				setPlaywrightLogs([]);
 
 				// APIリクエスト
-				const response = await fetch("/api/search", {
+				const response = await fetch("/api/search-jasrac", {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
@@ -71,21 +117,24 @@ function App() {
 					} else {
 						setSearchError("検索中にエラーが発生しました");
 					}
+					setHasSearchStarted(false);
 					return;
 				}
 
 				const result = await response.json();
-				if (result.message === "検索開始") {
+				if (Array.isArray(result) && result.length > 0) {
+					// すぐに結果が返ってきた場合（同期処理の場合）
+					setJasracResults(result);
+					setIsLoading(false);
+					setIsPollingLogs(false);
+				} else {
 					// ポーリングを開始
 					await fetchPlaywrightLogs();
-				} else {
-					setSearchError("検索の開始に失敗しました");
 				}
 			} catch (error) {
 				console.error("Error searching JASRAC:", error);
 				setSearchError("API通信中にエラーが発生しました");
-			} finally {
-				setIsLoading(false);
+				setHasSearchStarted(false);
 			}
 		},
 		[fetchPlaywrightLogs],
@@ -107,6 +156,22 @@ function App() {
 		};
 	}, [isPollingLogs, fetchPlaywrightLogs]);
 
+	// 検索結果のポーリング設定
+	useEffect(() => {
+		let intervalId: number | undefined;
+
+		if (isPollingResults) {
+			// 2秒ごとに検索結果を確認
+			intervalId = window.setInterval(fetchSearchResults, 2000);
+		}
+
+		return () => {
+			if (intervalId) {
+				window.clearInterval(intervalId);
+			}
+		};
+	}, [isPollingResults, fetchSearchResults]);
+
 	// ログ表示エリアを閉じる
 	const closeLogs = () => {
 		setShowLogs(false);
@@ -122,7 +187,9 @@ function App() {
 			if (response.ok) {
 				setSearchError("検索処理はキャンセルされました");
 				setIsPollingLogs(false);
+				setIsPollingResults(false);
 				setIsLoading(false);
+				setHasSearchStarted(false);
 			} else {
 				console.error("検索キャンセル中にエラーが発生しました");
 			}
