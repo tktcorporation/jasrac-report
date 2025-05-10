@@ -75,8 +75,12 @@ function App() {
 					return;
 				}
 
+				// 同じ作品コードの重複を排除
+				const uniqueResults = removeDuplicateWorkCodes(data);
+				console.log(`検索結果: ${data.length}件 → 重複排除後: ${uniqueResults.length}件`);
+
 				// 結果を設定
-				setJasracResults(data);
+				setJasracResults(uniqueResults);
 
 				// 検索結果タブに切り替え
 				setActiveTab("results");
@@ -185,6 +189,46 @@ function App() {
 		return lastLogs.some((log) =>
 			completionKeywords.some((keyword) => log.includes(keyword)),
 		);
+	};
+
+	// 同じ作品コードの楽曲を一つにまとめる関数
+	const removeDuplicateWorkCodes = (results: JasracInfo[]): JasracInfo[] => {
+		const workCodeMap = new Map<string, JasracInfo>();
+		
+		// 各結果を処理して、作品コードごとにマッピング
+		for (const result of results) {
+			const workCode = result.workCode;
+			
+			// この作品コードが未処理の場合
+			if (!workCodeMap.has(workCode)) {
+				workCodeMap.set(workCode, result);
+			} else {
+				// すでに同じ作品コードの楽曲が存在する場合
+				const existing = workCodeMap.get(workCode)!;
+				
+				// alternativesに情報を追加（もし存在して重複していなければ）
+				if (result.alternatives && result.alternatives.length > 0) {
+					existing.alternatives = existing.alternatives || [];
+					
+					// alternativesから重複しないものだけを追加
+					for (const alt of result.alternatives) {
+						if (alt.workCode === existing.workCode) continue;
+						
+						// 既存のalternativesに含まれていないか確認
+						const isDuplicate = existing.alternatives.some(
+							existingAlt => existingAlt.workCode === alt.workCode
+						);
+						
+						if (!isDuplicate) {
+							existing.alternatives.push(alt);
+						}
+					}
+				}
+			}
+		}
+		
+		// Mapの値を配列に変換して返す
+		return Array.from(workCodeMap.values());
 	};
 
 	return (

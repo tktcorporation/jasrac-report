@@ -52,6 +52,7 @@ interface JasracInfo {
   usagePermissions: UsagePermission;  // 利用許可情報
   
   rawHtml: string;          // デバッグ用に生のHTML
+  alternatives?: JasracInfo[]; // 他の候補
 }
 
 // 権利者情報
@@ -351,117 +352,137 @@ async function executeSearch(page: Page, song: SongInfo): Promise<JasracInfo | n
   // テーブル内のすべてのリンクとその行の情報を取得
   const rows = await page.$$('table.search-result tbody tr:not(:first-child)'); // ヘッダー行をスキップ
   console.log(`検索結果: ${rows.length}行`);
+
+  console.log('検索結果の行のHTML:', await rows.map(async (row) => await row.innerHTML()));
   
   if (rows.length === 0) {
     await debugPageState(page, '検索結果の行が見つかりません');
     console.log(`「${song.title}」の詳細リンクが見つかりませんでした`);
     return null;
   }
-  
-  // 複数の検索結果がある場合、最適なものを選択
-  let bestMatchIndex = 0;
-  let bestMatchScore = -1;
-  
-  if (rows.length > 1) {
-    console.log('複数の検索結果があります。最適な結果を探します...');
-    
-    for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
-      try {
-        // セルごとにテキストを取得して詳細評価
-        const cells = await row.$$('td');
-        if (cells.length < 3) continue;
-        
-        // タイトル (通常は3列目)
-        const titleCell = await cells[2].textContent() || '';
-        // 著作者 (通常は4列目)
-        const authorCell = cells.length > 3 ? await cells[3].textContent() || '' : '';
-        
-        let score = 0;
-        
-        // タイトルの一致スコア
-        if (titleCell.includes(song.title)) {
-          score += 3;
-          console.log(`  タイトル一致: ${titleCell}`);
+
+  // スコア配列を作成
+  const scoredRows: { index: number; score: number }[] = [];
+  for (let i = 0; i < rows.length; i++) {
+    const row = rows[i];
+    try {
+      const cells = await row.$$('td');
+      if (cells.length < 3) continue;
+      const titleCell = await cells[2].textContent() || '';
+      const authorCell = cells.length > 3 ? await cells[3].textContent() || '' : '';
+      
+      // タイトルを正規化（全角を半角に、大文字小文字を無視）
+      const normalizedTitle = normalizeText(titleCell);
+      const normalizedSongTitle = normalizeText(song.title);
+      
+      // 作詞者・作曲者も正規化
+      const normalizedAuthor = normalizeText(authorCell);
+      const normalizedLyricist = song.lyricist ? normalizeText(song.lyricist) : '';
+      const normalizedComposer = song.composer ? normalizeText(song.composer) : '';
+      const normalizedArtist = song.artist ? normalizeText(song.artist) : '';
+      
+      let score = 0;
+      
+      // 正規化したテキストで比較
+      if (normalizedTitle.includes(normalizedSongTitle)) {
+        score += 3;
+        console.log(`  タイトル一致: ${titleCell} ⊃ ${song.title}`);
+      }
+      
+      if (normalizedLyricist && normalizedAuthor.includes(normalizedLyricist)) {
+        score += 2;
+        console.log(`  作詞者一致: ${authorCell} ⊃ ${song.lyricist}`);
+      }
+      
+      if (normalizedComposer && normalizedAuthor.includes(normalizedComposer)) {
+        score += 2;
+        console.log(`  作曲者一致: ${authorCell} ⊃ ${song.composer}`);
+      }
+      
+      if (normalizedArtist && normalizedAuthor.includes(normalizedArtist)) {
+        score += 1;
+        console.log(`  アーティスト一致: ${authorCell} ⊃ ${song.artist}`);
+      }
+      
+      scoredRows.push({ index: i, score });
+      console.log(`行 ${i+1} のスコア: ${score} (タイトル: ${titleCell.substring(0, 30)}...)`);
+    } catch (error) {
+      console.error(`行 ${i+1} の解析中にエラーが発生:`, error);
+    }
+  }
+  // スコア順にソートし、上位3件のindexを取得
+  scoredRows.sort((a, b) => b.score - a.score);
+  const topIndexes = scoredRows.slice(0, 3).map(r => r.index);
+
+  // 上位候補の詳細情報を取得
+  const candidates: JasracInfo[] = [];
+  for (const idx of topIndexes) {
+    const row = rows[idx];
+    // 詳細リンクを取得
+    const rowLinks = await row.$$('a');
+    let info: JasracInfo | null = null;
+    if (rowLinks.length > 0) {
+      const [newPage] = await Promise.all([
+        page.context().waitForEvent('page'),
+        rowLinks[0].click()
+      ]);
+      await newPage.waitForLoadState('domcontentloaded');
+      await newPage.waitForTimeout(2000);
+      info = await processDetailPage(newPage, song);
+    } else {
+      const cells = await row.$$('td');
+      const codeCell = cells.length > 1 ? cells[1] : null;
+      if (codeCell) {
+        const codeLinks = await codeCell.$$('a');
+        if (codeLinks.length > 0) {
+          const [newPage] = await Promise.all([
+            page.context().waitForEvent('page'),
+            codeLinks[0].click()
+          ]);
+          await newPage.waitForLoadState('domcontentloaded');
+          await newPage.waitForTimeout(2000);
+          info = await processDetailPage(newPage, song);
         }
-        
-        // 作詞者と作曲者の一致スコア
-        if (song.lyricist && authorCell.includes(song.lyricist)) {
-          score += 2;
-          console.log(`  作詞者一致: ${authorCell}`);
-        }
-        
-        if (song.composer && authorCell.includes(song.composer)) {
-          score += 2;
-          console.log(`  作曲者一致: ${authorCell}`);
-        }
-        
-        // アーティストの一致スコア
-        if (song.artist && authorCell.includes(song.artist)) {
-          score += 1;
-          console.log(`  アーティスト一致: ${authorCell}`);
-        }
-        
-        console.log(`行 ${i+1} のスコア: ${score} (タイトル: ${titleCell.substring(0, 30)}...)`);
-        
-        if (score > bestMatchScore) {
-          bestMatchScore = score;
-          bestMatchIndex = i;
-        }
-      } catch (error) {
-        console.error(`行 ${i+1} の解析中にエラーが発生:`, error);
       }
     }
+    if (info) candidates.push(info);
+  }
+
+  if (candidates.length === 0) return null;
+
+  // 1位をメイン、2位・3位をalternativesに
+  const main = candidates[0];
+  if (main && candidates.length > 1) {
+    // 2位以降の候補をalternativesに追加
+    main.alternatives = candidates.slice(1).filter(alt => {
+      // 作品コードが異なる候補のみを追加
+      return alt.workCode !== main.workCode;
+    });
     
-    console.log(`最適な検索結果は行 ${bestMatchIndex+1} です（スコア: ${bestMatchScore}）`);
+    console.log(`メイン候補: ${main.workCode} (${main.title})`);
+    console.log(`代替候補: ${main.alternatives.length}件`);
+  } else {
+    // 候補が1つだけの場合は空の配列を設定
+    main.alternatives = [];
   }
   
-  // 選択した行の詳細リンクをクリック
-  const rowLinks = await rows[bestMatchIndex].$$('a');
+  return main;
+}
+
+// テキスト正規化関数
+function normalizeText(text: string): string {
+  // 全角→半角変換（カタカナ以外）
+  let normalized = text.replace(/[！-～]/g, function(s) {
+    return String.fromCharCode(s.charCodeAt(0) - 0xFEE0);
+  });
   
-  if (rowLinks.length === 0) {
-    // リンクが見つからない場合、作品コードをクリックするリンクを探す
-    const cells = await rows[bestMatchIndex].$$('td');
-    const codeCell = cells.length > 1 ? cells[1] : null;
-    
-    if (codeCell) {
-      const codeLinks = await codeCell.$$('a');
-      if (codeLinks.length > 0) {
-        console.log('作品コードリンクが見つかりました');
-        
-        // 新しいタブで詳細ページを開く
-        const [newPage] = await Promise.all([
-          page.context().waitForEvent('page'),
-          codeLinks[0].click()
-        ]);
-        
-        await newPage.waitForLoadState('domcontentloaded');
-        await newPage.waitForTimeout(2000); // 詳細ページの読み込み待機
-        
-        // 詳細ページの処理
-        return await processDetailPage(newPage, song);
-      }
-    }
-    
-    await debugPageState(page, '選択した行に詳細リンクが見つかりません');
-    console.log(`「${song.title}」の詳細リンクが見つかりませんでした`);
-    return null;
-  }
+  // 空白除去
+  normalized = normalized.replace(/\s+/g, '');
   
-  // 最初のリンクをクリック
-  console.log('詳細リンクをクリックします');
+  // 小文字化
+  normalized = normalized.toLowerCase();
   
-  // 新しいタブで詳細ページを開く
-  const [newPage] = await Promise.all([
-    page.context().waitForEvent('page'),
-    rowLinks[0].click()
-  ]);
-  
-  await newPage.waitForLoadState('domcontentloaded');
-  await newPage.waitForTimeout(2000); // 詳細ページの読み込み待機
-  
-  // 詳細ページの処理
-  return await processDetailPage(newPage, song);
+  return normalized;
 }
 
 // HTMLの空白を最小化する関数
@@ -672,7 +693,8 @@ async function processDetailPage(newPage: Page, song: SongInfo): Promise<JasracI
         publisher,
         sourceType,     // 出典情報を追加
         usagePermissions,
-        rawHtml: pageHTML  // ここで空白を最小化したHTMLを設定
+        rawHtml: pageHTML,  // ここで空白を最小化したHTMLを設定
+        alternatives: []
       };
     } catch (error) {
       console.error('詳細情報の抽出中にエラーが発生しました:', error);
@@ -1004,7 +1026,8 @@ async function main() {
             game: { recording_game: false, video_game: false },
             managementDetails: {}
           },
-          rawHtml: ''
+          rawHtml: '',
+          alternatives: []
         };
       });
 
@@ -1044,6 +1067,9 @@ async function main() {
       const info = await searchJasrac(page, song);
       if (info) {
         jasracInfos.push(info);
+        console.log(`「${song.title}」の情報を取得しました: ${info.workCode}`);
+      } else {
+        console.log(`「${song.title}」の情報は見つかりませんでした`);
       }
     }
     

@@ -25,6 +25,7 @@ export interface JasracInfo {
 	rawHtml: string;
 	selected?: boolean;
 	playwrightLogs?: string[];
+	alternatives?: JasracInfo[];
 }
 
 // 権利者情報
