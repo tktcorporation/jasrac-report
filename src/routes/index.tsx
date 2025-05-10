@@ -4,7 +4,11 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { PlaywrightLogsPanel } from "../components/playwright-logs-panel";
 import { SearchResults } from "../components/search-results";
 import { SongInputForm } from "../components/song-input-form";
-import { getPlaywrightLogs, searchJasracInfo } from "../lib/jasrac-bridge";
+import {
+	getJasracResults,
+	getPlaywrightLogs,
+	searchJasracInfo,
+} from "../lib/jasrac-bridge";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
 
 export const Route = createFileRoute("/")({
@@ -57,23 +61,19 @@ function App() {
 	// 検索結果を取得する関数
 	const fetchSearchResults = useCallback(async () => {
 		try {
-			const response = await fetch("/api/jasrac-results");
-			if (response.ok) {
-				const results = await response.json();
-				console.log("検索結果を取得しました:", results);
+			const results = await getJasracResults();
 
-				if (Array.isArray(results) && results.length > 0) {
-					// 検索が完了し、結果が取得できた場合
-					setJasracResults(results);
-					// ポーリングを停止
-					setIsPollingResults(false);
-					setIsPollingLogs(false);
-				}
-			} else if (response.status === 404) {
+			if (Array.isArray(results) && results.length > 0) {
+				console.log("検索結果を取得しました:", results.length, "件");
+				// 検索が完了し、結果が取得できた場合
+				setJasracResults(results);
+				// ポーリングを停止
+				setIsPollingResults(false);
+				setIsPollingLogs(false);
+				setIsLoading(false);
+			} else {
 				// 結果がまだない場合は待機
 				console.log("検索結果はまだありません。待機中...");
-			} else {
-				console.error("検索結果取得エラー:", response.status);
 			}
 		} catch (error) {
 			console.error("検索結果取得中にエラー:", error);

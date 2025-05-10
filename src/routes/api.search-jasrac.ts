@@ -29,10 +29,14 @@ export const APIRoute = createAPIFileRoute("/api/search-jasrac")({
 			}
 
 			console.log("JASRACの検索を開始します (GET):", songs);
-			const results = await searchJasracInfo(songs);
-			console.log("検索結果:", results.length, "件");
 
-			return new Response(JSON.stringify(results), {
+			// 検索を開始する（結果は非同期で処理）
+			searchJasracInfo(songs).catch((error) => {
+				console.error("バックグラウンド検索中にエラーが発生:", error);
+			});
+
+			// 検索開始のレスポンスを返す
+			return new Response(JSON.stringify({ message: "検索開始" }), {
 				headers: { "Content-Type": "application/json" },
 			});
 		} catch (error) {
@@ -62,9 +66,15 @@ export const APIRoute = createAPIFileRoute("/api/search-jasrac")({
 				);
 			}
 
-			const results = await searchJasracInfo(songs);
+			console.log("JASRACの検索を開始します (POST):", songs);
 
-			return new Response(JSON.stringify(results), {
+			// 検索を開始する（結果は非同期で処理）
+			searchJasracInfo(songs).catch((error) => {
+				console.error("バックグラウンド検索中にエラーが発生:", error);
+			});
+
+			// 検索開始のレスポンスを返す
+			return new Response(JSON.stringify({ message: "検索開始" }), {
 				headers: { "Content-Type": "application/json" },
 			});
 		} catch (error) {

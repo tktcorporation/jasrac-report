@@ -56,10 +56,10 @@ export function convertToTsv(results: JasracInfo[]): string {
 	);
 }
 
-// APIを呼び出してJASRAC情報を検索する関数（クライアント側）
+// APIを呼び出してJASRAC情報の検索を開始する関数（クライアント側）
 export async function searchJasracInfo(
 	songs: SongInfo[],
-): Promise<JasracInfo[]> {
+): Promise<{ message: string }> {
 	try {
 		const response = await fetch("/api/search-jasrac", {
 			method: "POST",
@@ -78,6 +78,27 @@ export async function searchJasracInfo(
 	} catch (error) {
 		console.error("JASRAC検索APIエラー:", error);
 		throw error;
+	}
+}
+
+// JASRAC検索結果を取得する関数（クライアント側）
+export async function getJasracResults(): Promise<JasracInfo[]> {
+	try {
+		const response = await fetch("/api/jasrac-results");
+
+		if (response.status === 404) {
+			// 結果がまだ取得できていない場合は空の配列を返す
+			return [];
+		}
+
+		if (!response.ok) {
+			throw new Error(`API Error: ${response.status}`);
+		}
+
+		return await response.json();
+	} catch (error) {
+		console.error("JASRAC結果取得APIエラー:", error);
+		return [];
 	}
 }
 
