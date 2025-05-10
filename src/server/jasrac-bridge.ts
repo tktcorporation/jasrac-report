@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
-import os from "os";
 
 // JASRACから曲情報を検索する関数
 export async function searchJasracInfo(
@@ -20,10 +20,10 @@ export async function searchJasracInfo(
 			console.log("Playwright検索スクリプトを実行します...");
 			const tempDir = path.resolve(os.tmpdir(), "jasrac-temp");
 			const inputFile = path.join(tempDir, "songs-input.json");
-			
+
 			// ログファイルのパス
 			const logFile = path.join(tempDir, "playwright-logs.json");
-			
+
 			// 出力ファイルのパス
 			const outputFile = path.join(tempDir, "jasrac-results.json");
 
@@ -31,7 +31,7 @@ export async function searchJasracInfo(
 			if (!fs.existsSync(tempDir)) {
 				fs.mkdirSync(tempDir, { recursive: true });
 			}
-			
+
 			// 古いファイルがあれば削除（クリーンな状態で開始）
 			if (fs.existsSync(logFile)) {
 				fs.unlinkSync(logFile);
@@ -47,14 +47,14 @@ export async function searchJasracInfo(
 
 			// 入力ファイルを作成
 			fs.writeFileSync(inputFile, JSON.stringify(songs));
-			
+
 			// ログファイルを初期化
 			fs.writeFileSync(logFile, JSON.stringify([]), "utf8");
-			
+
 			// 曲数の情報をログに記録
 			const initialLog = `合計${songs.length}曲の検索を開始します`;
 			playwrightLogs.push(initialLog);
-			
+
 			// 現在のログをファイルに書き込む関数
 			const updateLogFile = () => {
 				try {
@@ -63,16 +63,26 @@ export async function searchJasracInfo(
 					console.error("ログファイルの更新に失敗:", error);
 				}
 			};
-			
+
 			// 初期ログを書き込み
 			updateLogFile();
 
 			// 検索スクリプトのパスを取得
-			const scriptPath = path.resolve(process.cwd(), "playwright/jasrac-collector.ts");
+			const scriptPath = path.resolve(
+				process.cwd(),
+				"playwright/jasrac-collector.ts",
+			);
 
 			// コマンドを実行
 			const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
-			const args = ["tsx", scriptPath, "--input", inputFile, "--output", outputFile];
+			const args = [
+				"tsx",
+				scriptPath,
+				"--input",
+				inputFile,
+				"--output",
+				outputFile,
+			];
 			const proc = spawn(cmd, args);
 
 			// プロセスIDをファイルに保存（キャンセル機能のため）
@@ -92,12 +102,14 @@ export async function searchJasracInfo(
 				const logMessage = data.toString();
 				stdout += logMessage;
 				console.log("Playwright出力:", logMessage);
-				
+
 				// 曲検索進捗情報を追加（例："〇〇の情報をJASRACで検索中..."）
-				const songProgressMatch = logMessage.match(/「(.+?)」の情報をJASRACで検索中/);
-				if (songProgressMatch && songProgressMatch[1]) {
+				const songProgressMatch = logMessage.match(
+					/「(.+?)」の情報をJASRACで検索中/,
+				);
+				if (songProgressMatch?.[1]) {
 					const songTitle = songProgressMatch[1];
-					const songIndex = songs.findIndex(s => s.title === songTitle) + 1;
+					const songIndex = songs.findIndex((s) => s.title === songTitle) + 1;
 					if (songIndex > 0) {
 						const progressLog = `${songIndex}曲目を検索中: ${songTitle} (${songIndex}/${songs.length}曲目)`;
 						playwrightLogs.push(progressLog);
@@ -117,7 +129,7 @@ export async function searchJasracInfo(
 				stderr += errorMessage;
 				console.error("Playwright エラー:", errorMessage);
 				playwrightLogs.push(`[エラー] ${errorMessage}`);
-				
+
 				// エラーログも書き込む
 				updateLogFile();
 			});
@@ -140,8 +152,10 @@ export async function searchJasracInfo(
 						if (Array.isArray(results) && results.length > 0) {
 							// 作品コードの重複を排除するための処理
 							const uniqueResults = removeDuplicateWorkCodes(results);
-							console.log(`検索結果: ${results.length}件 → 重複排除後: ${uniqueResults.length}件`);
-							
+							console.log(
+								`検索結果: ${results.length}件 → 重複排除後: ${uniqueResults.length}件`,
+							);
+
 							// 重複排除済みの結果を返す
 							resolve(uniqueResults);
 						} else {
@@ -227,31 +241,31 @@ export async function searchJasracInfo(
 // 同じ作品コードの楽曲を一つにまとめる関数
 function removeDuplicateWorkCodes(results: JasracInfo[]): JasracInfo[] {
 	const workCodeMap = new Map<string, JasracInfo>();
-	
+
 	// 各結果を処理して、作品コードごとにマッピング
 	for (const result of results) {
 		const workCode = result.workCode;
-		
+
 		// この作品コードが未処理の場合
 		if (!workCodeMap.has(workCode)) {
 			workCodeMap.set(workCode, result);
 		} else {
 			// すでに同じ作品コードの楽曲が存在する場合
 			const existing = workCodeMap.get(workCode)!;
-			
+
 			// alternativesに情報を追加（もし存在して重複していなければ）
 			if (result.alternatives && result.alternatives.length > 0) {
 				existing.alternatives = existing.alternatives || [];
-				
+
 				// alternativesから重複しないものだけを追加
 				for (const alt of result.alternatives) {
 					if (alt.workCode === existing.workCode) continue;
-					
+
 					// 既存のalternativesに含まれていないか確認
 					const isDuplicate = existing.alternatives.some(
-						existingAlt => existingAlt.workCode === alt.workCode
+						(existingAlt) => existingAlt.workCode === alt.workCode,
 					);
-					
+
 					if (!isDuplicate) {
 						existing.alternatives.push(alt);
 					}
@@ -259,7 +273,7 @@ function removeDuplicateWorkCodes(results: JasracInfo[]): JasracInfo[] {
 			}
 		}
 	}
-	
+
 	// Mapの値を配列に変換して返す
 	return Array.from(workCodeMap.values());
 }

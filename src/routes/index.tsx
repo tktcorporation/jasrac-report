@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { Music, TableIcon } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { PlaywrightLogsPanel } from "../components/playwright-logs-panel";
 import { SearchResults } from "../components/search-results";
 import { SongInputForm } from "../components/song-input-form";
 import { getPlaywrightLogs, searchJasracInfo } from "../lib/jasrac-bridge";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
-import { PlaywrightLogsPanel } from "../components/playwright-logs-panel";
 
 export const Route = createFileRoute("/")({
 	component: App,
@@ -22,7 +22,7 @@ function App() {
 	const [playwrightLogs, setPlaywrightLogs] = useState<string[]>([]);
 	const [isPollingLogs, setIsPollingLogs] = useState<boolean>(false);
 	const [showLogs, setShowLogs] = useState<boolean>(false);
-	
+
 	// ログを取得する関数
 	const fetchPlaywrightLogs = useCallback(async () => {
 		try {
@@ -78,7 +78,9 @@ function App() {
 
 				// 同じ作品コードの重複を排除
 				const uniqueResults = removeDuplicateWorkCodes(data);
-				console.log(`検索結果: ${data.length}件 → 重複排除後: ${uniqueResults.length}件`);
+				console.log(
+					`検索結果: ${data.length}件 → 重複排除後: ${uniqueResults.length}件`,
+				);
 
 				// 結果を設定
 				setJasracResults(uniqueResults);
@@ -169,31 +171,31 @@ function App() {
 	// 同じ作品コードの楽曲を一つにまとめる関数
 	const removeDuplicateWorkCodes = (results: JasracInfo[]): JasracInfo[] => {
 		const workCodeMap = new Map<string, JasracInfo>();
-		
+
 		// 各結果を処理して、作品コードごとにマッピング
 		for (const result of results) {
 			const workCode = result.workCode;
-			
+
 			// この作品コードが未処理の場合
 			if (!workCodeMap.has(workCode)) {
 				workCodeMap.set(workCode, result);
 			} else {
 				// すでに同じ作品コードの楽曲が存在する場合
 				const existing = workCodeMap.get(workCode)!;
-				
+
 				// alternativesに情報を追加（もし存在して重複していなければ）
 				if (result.alternatives && result.alternatives.length > 0) {
 					existing.alternatives = existing.alternatives || [];
-					
+
 					// alternativesから重複しないものだけを追加
 					for (const alt of result.alternatives) {
 						if (alt.workCode === existing.workCode) continue;
-						
+
 						// 既存のalternativesに含まれていないか確認
 						const isDuplicate = existing.alternatives.some(
-							existingAlt => existingAlt.workCode === alt.workCode
+							(existingAlt) => existingAlt.workCode === alt.workCode,
 						);
-						
+
 						if (!isDuplicate) {
 							existing.alternatives.push(alt);
 						}
@@ -201,7 +203,7 @@ function App() {
 				}
 			}
 		}
-		
+
 		// Mapの値を配列に変換して返す
 		return Array.from(workCodeMap.values());
 	};
@@ -262,9 +264,9 @@ function App() {
 						onClose={closeLogs}
 					/>
 
-					<SearchResults 
-						results={jasracResults} 
-						isLoading={isLoading} 
+					<SearchResults
+						results={jasracResults}
+						isLoading={isLoading}
 						playwrightLogs={playwrightLogs}
 						isPollingLogs={isPollingLogs}
 						setShowLogs={setShowLogs}

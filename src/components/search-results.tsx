@@ -16,6 +16,8 @@ import {
 	DialogTitle,
 	DialogTrigger,
 } from "./ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Progress } from "./ui/progress";
 import {
 	Table,
 	TableBody,
@@ -25,12 +27,6 @@ import {
 	TableRow,
 } from "./ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
-import {
-	Popover,
-	PopoverContent,
-	PopoverTrigger,
-} from "./ui/popover";
-import { Progress } from "./ui/progress";
 
 interface SearchResultsProps {
 	results: JasracInfo[];
@@ -54,7 +50,9 @@ export function SearchResults({
 	const [detailDialogOpen, setDetailDialogOpen] = useState(false);
 	const [selectedDetail, setSelectedDetail] = useState<JasracInfo | null>(null);
 	const [activeTab, setActiveTab] = useState("search-results");
-	const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
+	const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(
+		null,
+	);
 	const [searchProgress, setSearchProgress] = useState(0);
 
 	// 検索結果が取得されたらPlaywright実行ログを畳む
@@ -85,39 +83,45 @@ export function SearchResults({
 				// 曲数の情報を取得（例: "2曲目を検索中..."）
 				let currentSongIndex = 0;
 				let totalSongs = 0;
-				
+
 				for (const log of playwrightLogs) {
 					// 曲数情報を正規表現で抽出（フォーマット: "N曲目を検索中: タイトル (N/M曲目)"）
-					const songIndexMatch = log.match(/(\d+)曲目を検索中: .+ \((\d+)\/(\d+)曲目\)/);
-					if (songIndexMatch && songIndexMatch[1] && songIndexMatch[3]) {
-						currentSongIndex = parseInt(songIndexMatch[1], 10);
-						totalSongs = parseInt(songIndexMatch[3], 10);
+					const songIndexMatch = log.match(
+						/(\d+)曲目を検索中: .+ \((\d+)\/(\d+)曲目\)/,
+					);
+					if (songIndexMatch?.[1] && songIndexMatch[3]) {
+						currentSongIndex = Number.parseInt(songIndexMatch[1], 10);
+						totalSongs = Number.parseInt(songIndexMatch[3], 10);
 					}
-					
+
 					// 合計曲数情報を正規表現で抽出
 					const totalSongsMatch = log.match(/合計(\d+)曲の検索を開始/);
-					if (totalSongsMatch && totalSongsMatch[1] && !totalSongs) {
-						totalSongs = parseInt(totalSongsMatch[1], 10);
+					if (totalSongsMatch?.[1] && !totalSongs) {
+						totalSongs = Number.parseInt(totalSongsMatch[1], 10);
 					}
 				}
 
 				// 現在のログの状態に基づいて最も進んだ進捗値を特定
 				let currentProgress = 5; // デフォルト値
-				
+
 				// 曲数情報から進捗を計算（優先）
 				if (totalSongs > 0 && currentSongIndex > 0) {
-					currentProgress = Math.floor((currentSongIndex / totalSongs) * 80) + 10;
+					currentProgress =
+						Math.floor((currentSongIndex / totalSongs) * 80) + 10;
 				} else {
 					// キーワードベースの進捗計算（バックアップ）
 					for (const log of playwrightLogs) {
 						for (const indicator of progressIndicators) {
-							if (log.includes(indicator.keyword) && indicator.value > currentProgress) {
+							if (
+								log.includes(indicator.keyword) &&
+								indicator.value > currentProgress
+							) {
 								currentProgress = indicator.value;
 							}
 						}
 					}
 				}
-				
+
 				setSearchProgress(currentProgress);
 			} else {
 				// ログがまだない場合は初期状態
@@ -242,27 +246,39 @@ export function SearchResults({
 						<div className="space-y-2">
 							<div className="flex justify-between items-center mb-1">
 								<span className="text-sm font-medium">検索進捗状況</span>
-								<span className={`text-sm font-medium ${searchProgress === 100 ? "text-green-600" : "text-blue-600"}`}>
+								<span
+									className={`text-sm font-medium ${searchProgress === 100 ? "text-green-600" : "text-blue-600"}`}
+								>
 									{searchProgress}%
 								</span>
 							</div>
-							<Progress 
-								value={searchProgress} 
+							<Progress
+								value={searchProgress}
 								className={`h-2 ${searchProgress === 100 ? "bg-green-100" : "bg-blue-100"}`}
 							/>
 							<div className="flex justify-between items-center text-xs text-gray-500 mt-2">
 								<div>
 									{searchProgress < 30 && "JASRAC検索ページにアクセス中..."}
-									{searchProgress >= 30 && searchProgress < 60 && "検索結果を取得中..."}
-									{searchProgress >= 60 && searchProgress < 100 && "詳細情報を取得・解析中..."}
+									{searchProgress >= 30 &&
+										searchProgress < 60 &&
+										"検索結果を取得中..."}
+									{searchProgress >= 60 &&
+										searchProgress < 100 &&
+										"詳細情報を取得・解析中..."}
 									{searchProgress === 100 && (
-										<span className="text-green-600 font-medium">検索完了！</span>
+										<span className="text-green-600 font-medium">
+											検索完了！
+										</span>
 									)}
 								</div>
 								{playwrightLogs.length > 0 && (
 									<div className="text-right">
-										{playwrightLogs.filter(log => log.includes("曲目を検索中")).pop() || 
-										(searchProgress === 100 ? "すべての曲の検索が完了しました" : "検索準備中...")}
+										{playwrightLogs
+											.filter((log) => log.includes("曲目を検索中"))
+											.pop() ||
+											(searchProgress === 100
+												? "すべての曲の検索が完了しました"
+												: "検索準備中...")}
 									</div>
 								)}
 							</div>
@@ -270,7 +286,7 @@ export function SearchResults({
 					</CardContent>
 				</Card>
 			)}
-			
+
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
 				<TabsList className="mb-4">
 					<TabsTrigger value="search-results">検索結果</TabsTrigger>
@@ -424,52 +440,55 @@ export function SearchResults({
 															</Button>
 														</TableCell>
 														<TableCell>
-															{result.alternatives && result.alternatives.length > 0 && (
-																<Popover
-																	open={openDropdownIndex === index}
-																	onOpenChange={(isOpen) => {
-																		if (isOpen) {
-																			setOpenDropdownIndex(index);
-																		} else {
-																			setOpenDropdownIndex(null);
-																		}
-																	}}
-																>
-																	<PopoverTrigger asChild>
-																		<Button variant="outline" size="sm">
-																			他の候補を表示
-																		</Button>
-																	</PopoverTrigger>
-																	<PopoverContent className="w-72 p-0">
-																		<div className="py-1">
-																			<div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 font-medium border-b dark:border-gray-700">
-																				他の候補
+															{result.alternatives &&
+																result.alternatives.length > 0 && (
+																	<Popover
+																		open={openDropdownIndex === index}
+																		onOpenChange={(isOpen) => {
+																			if (isOpen) {
+																				setOpenDropdownIndex(index);
+																			} else {
+																				setOpenDropdownIndex(null);
+																			}
+																		}}
+																	>
+																		<PopoverTrigger asChild>
+																			<Button variant="outline" size="sm">
+																				他の候補を表示
+																			</Button>
+																		</PopoverTrigger>
+																		<PopoverContent className="w-72 p-0">
+																			<div className="py-1">
+																				<div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 font-medium border-b dark:border-gray-700">
+																					他の候補
+																				</div>
+																				{result.alternatives.map(
+																					(alt, altIdx) => (
+																						<button
+																							key={altIdx}
+																							className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+																							onClick={() => {
+																								replaceResultWithAlternative(
+																									index,
+																									altIdx,
+																								);
+																								setOpenDropdownIndex(null); // Close popover
+																							}}
+																						>
+																							<div className="font-medium">
+																								{alt.title}
+																							</div>
+																							<div className="text-xs text-gray-500 dark:text-gray-400">
+																								{alt.workCode} / {alt.lyricist}{" "}
+																								/ {alt.composer}
+																							</div>
+																						</button>
+																					),
+																				)}
 																			</div>
-																			{result.alternatives.map((alt, altIdx) => (
-																				<button
-																					key={altIdx}
-																					className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-																					onClick={() => {
-																						replaceResultWithAlternative(
-																							index,
-																							altIdx,
-																						);
-																						setOpenDropdownIndex(null); // Close popover
-																					}}
-																				>
-																					<div className="font-medium">
-																						{alt.title}
-																					</div>
-																					<div className="text-xs text-gray-500 dark:text-gray-400">
-																						{alt.workCode} / {alt.lyricist} /{" "}
-																						{alt.composer}
-																					</div>
-																				</button>
-																			))}
-																		</div>
-																	</PopoverContent>
-																</Popover>
-															)}
+																		</PopoverContent>
+																	</Popover>
+																)}
 														</TableCell>
 													</TableRow>
 												))}

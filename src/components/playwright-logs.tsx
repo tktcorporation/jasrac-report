@@ -1,11 +1,11 @@
+import { ChevronDown, ChevronUp } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
-import { 
-	Collapsible, 
-	CollapsibleContent, 
-	CollapsibleTrigger 
+import {
+	Collapsible,
+	CollapsibleContent,
+	CollapsibleTrigger,
 } from "./ui/collapsible";
-import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface PlaywrightLogsProps {
 	logs: string[];
@@ -48,12 +48,15 @@ export function PlaywrightLogs({
 					<CardTitle className="text-base flex items-center justify-between">
 						<div className="flex items-center">
 							<CollapsibleTrigger className="flex items-center mr-2 hover:text-blue-500">
-								{isOpen ? 
-									<ChevronUp className="h-4 w-4" /> : 
+								{isOpen ? (
+									<ChevronUp className="h-4 w-4" />
+								) : (
 									<ChevronDown className="h-4 w-4" />
-								}
+								)}
 							</CollapsibleTrigger>
-							<span>Playwright実行ログ{isPolling ? "（2秒ごとに更新）" : ""}</span>
+							<span>
+								Playwright実行ログ{isPolling ? "（2秒ごとに更新）" : ""}
+							</span>
 						</div>
 						{isPolling && (
 							<div className="flex items-center text-sm text-blue-500">
@@ -62,9 +65,7 @@ export function PlaywrightLogs({
 							</div>
 						)}
 						{isCompleted && !isPolling && (
-							<div className="text-sm text-green-500">
-								完了
-							</div>
+							<div className="text-sm text-green-500">完了</div>
 						)}
 					</CardTitle>
 				</CardHeader>
@@ -78,7 +79,9 @@ export function PlaywrightLogs({
 											<div
 												key={i}
 												className={
-													log.includes("[エラー]") ? "text-red-400" : "text-green-400"
+													log.includes("[エラー]")
+														? "text-red-400"
+														: "text-green-400"
 												}
 											>
 												{log}
