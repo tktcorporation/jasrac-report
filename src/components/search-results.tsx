@@ -26,6 +26,11 @@ import {
 	TableRow,
 } from "./ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
+import {
+	Popover,
+	PopoverContent,
+	PopoverTrigger,
+} from "./ui/popover";
 
 interface SearchResultsProps {
 	results: JasracInfo[];
@@ -136,11 +141,6 @@ export function SearchResults({
 			return;
 		}
 		setActiveTab("validation");
-	};
-
-	// ドロップダウンの開閉を制御する関数
-	const toggleDropdown = (index: number) => {
-		setOpenDropdownIndex(openDropdownIndex === index ? null : index);
 	};
 
 	if (results.length === 0 && !isLoading) {
@@ -307,39 +307,50 @@ export function SearchResults({
 														</TableCell>
 														<TableCell>
 															{result.alternatives && result.alternatives.length > 0 && (
-																<div className="relative">
-																	<Button
-																		variant="outline"
-																		size="sm"
-																		onClick={() => toggleDropdown(index)}
-																	>
-																	他の候補を表示
-																	</Button>
-																	{openDropdownIndex === index && (
-																		<div className="absolute z-10 mt-1 w-72 rounded-md bg-white dark:bg-gray-900 shadow-lg ring-1 ring-black ring-opacity-5 dark:ring-white dark:ring-opacity-10">
-																			<div className="py-1">
-																				<div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 font-medium border-b dark:border-gray-700">
-																					他の候補
-																				</div>
-																				{result.alternatives.map((alt, altIdx) => (
-																					<button
-																						key={altIdx}
-																						className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-																						onClick={() => {
-																							replaceResultWithAlternative(index, altIdx);
-																							setOpenDropdownIndex(null);
-																						}}
-																					>
-																						<div className="font-medium">{alt.title}</div>
-																						<div className="text-xs text-gray-500 dark:text-gray-400">
-																							{alt.workCode} / {alt.lyricist} / {alt.composer}
-																						</div>
-																					</button>
-																				))}
+																<Popover
+																	open={openDropdownIndex === index}
+																	onOpenChange={(isOpen) => {
+																		if (isOpen) {
+																			setOpenDropdownIndex(index);
+																		} else {
+																			setOpenDropdownIndex(null);
+																		}
+																	}}
+																>
+																	<PopoverTrigger asChild>
+																		<Button variant="outline" size="sm">
+																			他の候補を表示
+																		</Button>
+																	</PopoverTrigger>
+																	<PopoverContent className="w-72 p-0">
+																		<div className="py-1">
+																			<div className="px-4 py-2 text-sm text-gray-700 dark:text-gray-300 font-medium border-b dark:border-gray-700">
+																				他の候補
 																			</div>
+																			{result.alternatives.map((alt, altIdx) => (
+																				<button
+																					key={altIdx}
+																					className="block w-full text-left px-4 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+																					onClick={() => {
+																						replaceResultWithAlternative(
+																							index,
+																							altIdx,
+																						);
+																						setOpenDropdownIndex(null); // Close popover
+																					}}
+																				>
+																					<div className="font-medium">
+																						{alt.title}
+																					</div>
+																					<div className="text-xs text-gray-500 dark:text-gray-400">
+																						{alt.workCode} / {alt.lyricist} /{" "}
+																						{alt.composer}
+																					</div>
+																				</button>
+																			))}
 																		</div>
-																	)}
-																</div>
+																	</PopoverContent>
+																</Popover>
 															)}
 														</TableCell>
 													</TableRow>
