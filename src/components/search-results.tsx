@@ -31,15 +31,22 @@ import {
 	PopoverContent,
 	PopoverTrigger,
 } from "./ui/popover";
+import { Progress } from "./ui/progress";
 
 interface SearchResultsProps {
 	results: JasracInfo[];
 	isLoading: boolean;
+	playwrightLogs?: string[];
+	isPollingLogs?: boolean;
+	setShowLogs?: (show: boolean) => void;
 }
 
 export function SearchResults({
 	results: initialResults,
 	isLoading,
+	playwrightLogs = [],
+	isPollingLogs = false,
+	setShowLogs,
 }: SearchResultsProps) {
 	const [results, setResults] = useState<JasracInfo[]>(initialResults);
 	const [selectedItems, setSelectedItems] = useState<Record<number, boolean>>(
@@ -49,6 +56,82 @@ export function SearchResults({
 	const [selectedDetail, setSelectedDetail] = useState<JasracInfo | null>(null);
 	const [activeTab, setActiveTab] = useState("search-results");
 	const [openDropdownIndex, setOpenDropdownIndex] = useState<number | null>(null);
+	const [searchProgress, setSearchProgress] = useState(0);
+
+	// 検索結果が取得されたらPlaywright実行ログを畳む
+	useEffect(() => {
+		if (initialResults.length > 0 && !isLoading && setShowLogs) {
+			// 検索結果が取得されて、ローディング終了時にログを非表示にするのではなく
+			// 折りたたむためにfalseにはしない
+			// setShowLogs(false);
+		}
+	}, [initialResults.length, isLoading, setShowLogs]);
+
+	// 検索の進捗状況を推定する
+	useEffect(() => {
+		if (isLoading || isPollingLogs) {
+			if (playwrightLogs.length > 0) {
+				// ログの内容から進捗を推定
+				const progressIndicators = [
+					{ keyword: "検索を開始", value: 10 },
+					{ keyword: "曲情報入力", value: 20 },
+					{ keyword: "検索ボタンをクリック", value: 30 },
+					{ keyword: "検索結果を取得中", value: 50 },
+					{ keyword: "詳細情報を取得中", value: 70 },
+					{ keyword: "情報を解析中", value: 90 },
+					{ keyword: "完了しました", value: 100 },
+					{ keyword: "終了コード 0", value: 100 },
+				];
+
+				// 曲数の情報を取得（例: "2曲目を検索中..."）
+				let currentSongIndex = 0;
+				let totalSongs = 0;
+				
+				for (const log of playwrightLogs) {
+					// 曲数情報を正規表現で抽出（フォーマット: "N曲目を検索中: タイトル (N/M曲目)"）
+					const songIndexMatch = log.match(/(\d+)曲目を検索中: .+ \((\d+)\/(\d+)曲目\)/);
+					if (songIndexMatch && songIndexMatch[1] && songIndexMatch[3]) {
+						currentSongIndex = parseInt(songIndexMatch[1], 10);
+						totalSongs = parseInt(songIndexMatch[3], 10);
+					}
+					
+					// 合計曲数情報を正規表現で抽出
+					const totalSongsMatch = log.match(/合計(\d+)曲の検索を開始/);
+					if (totalSongsMatch && totalSongsMatch[1] && !totalSongs) {
+						totalSongs = parseInt(totalSongsMatch[1], 10);
+					}
+				}
+
+				// 現在のログの状態に基づいて最も進んだ進捗値を特定
+				let currentProgress = 5; // デフォルト値
+				
+				// 曲数情報から進捗を計算（優先）
+				if (totalSongs > 0 && currentSongIndex > 0) {
+					currentProgress = Math.floor((currentSongIndex / totalSongs) * 80) + 10;
+				} else {
+					// キーワードベースの進捗計算（バックアップ）
+					for (const log of playwrightLogs) {
+						for (const indicator of progressIndicators) {
+							if (log.includes(indicator.keyword) && indicator.value > currentProgress) {
+								currentProgress = indicator.value;
+							}
+						}
+					}
+				}
+				
+				setSearchProgress(currentProgress);
+			} else {
+				// ログがまだない場合は初期状態
+				setSearchProgress(5);
+			}
+		} else if (!isLoading && !isPollingLogs && initialResults.length > 0) {
+			// 検索が完了し結果がある場合（ローディングとポーリングが両方終わっていることを確認）
+			setSearchProgress(100);
+		} else {
+			// 検索していない初期状態
+			setSearchProgress(0);
+		}
+	}, [playwrightLogs, isLoading, isPollingLogs, initialResults.length]);
 
 	useEffect(() => {
 		setResults(initialResults);
@@ -143,7 +226,7 @@ export function SearchResults({
 		setActiveTab("validation");
 	};
 
-	if (results.length === 0 && !isLoading) {
+	if (results.length === 0 && !isLoading && !isPollingLogs) {
 		return (
 			<div className="text-center py-10 text-gray-500">
 				検索結果はまだありません
@@ -153,6 +236,42 @@ export function SearchResults({
 
 	return (
 		<div className="space-y-6">
+			{/* 検索進捗状況の表示 */}
+			{(isLoading || isPollingLogs || searchProgress === 100) && (
+				<Card className="mb-4">
+					<CardContent className="pt-6">
+						<div className="space-y-2">
+							<div className="flex justify-between items-center mb-1">
+								<span className="text-sm font-medium">検索進捗状況</span>
+								<span className={`text-sm font-medium ${searchProgress === 100 ? "text-green-600" : "text-blue-600"}`}>
+									{searchProgress}%
+								</span>
+							</div>
+							<Progress 
+								value={searchProgress} 
+								className={`h-2 ${searchProgress === 100 ? "bg-green-100" : "bg-blue-100"}`}
+							/>
+							<div className="flex justify-between items-center text-xs text-gray-500 mt-2">
+								<div>
+									{searchProgress < 30 && "JASRAC検索ページにアクセス中..."}
+									{searchProgress >= 30 && searchProgress < 60 && "検索結果を取得中..."}
+									{searchProgress >= 60 && searchProgress < 100 && "詳細情報を取得・解析中..."}
+									{searchProgress === 100 && (
+										<span className="text-green-600 font-medium">検索完了！</span>
+									)}
+								</div>
+								{playwrightLogs.length > 0 && (
+									<div className="text-right">
+										{playwrightLogs.filter(log => log.includes("曲目を検索中")).pop() || 
+										(searchProgress === 100 ? "すべての曲の検索が完了しました" : "検索準備中...")}
+									</div>
+								)}
+							</div>
+						</div>
+					</CardContent>
+				</Card>
+			)}
+			
 			<Tabs value={activeTab} onValueChange={setActiveTab}>
 				<TabsList className="mb-4">
 					<TabsTrigger value="search-results">検索結果</TabsTrigger>
@@ -367,6 +486,11 @@ export function SearchResults({
 									<p className="text-gray-500">
 										JASRACから情報を取得しています...
 									</p>
+									{playwrightLogs.length > 0 && (
+										<p className="text-xs text-gray-400 mt-2">
+											{playwrightLogs[playwrightLogs.length - 1]}
+										</p>
+									)}
 								</div>
 							)}
 						</CardContent>

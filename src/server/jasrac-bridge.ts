@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
+import os from "os";
 
 // JASRACから曲情報を検索する関数
 export async function searchJasracInfo(
@@ -15,39 +16,64 @@ export async function searchJasracInfo(
 			// Playwrightの出力ログを保存する配列
 			const playwrightLogs: string[] = [];
 
-			// 一時ファイルに曲情報を書き込む（Playwrightスクリプトへの入力として）
-			const tempDir = path.join(process.cwd(), "temp");
+			// 検索スクリプトを実行
+			console.log("Playwright検索スクリプトを実行します...");
+			const tempDir = path.resolve(os.tmpdir(), "jasrac-temp");
+			const inputFile = path.join(tempDir, "songs-input.json");
+			
+			// ログファイルのパス
+			const logFile = path.join(tempDir, "playwright-logs.json");
+			
+			// 出力ファイルのパス
+			const outputFile = path.join(tempDir, "jasrac-results.json");
+
+			// 一時ディレクトリがなければ作成
 			if (!fs.existsSync(tempDir)) {
 				fs.mkdirSync(tempDir, { recursive: true });
 			}
+			
+			// 古いファイルがあれば削除（クリーンな状態で開始）
+			if (fs.existsSync(logFile)) {
+				fs.unlinkSync(logFile);
+			}
+			if (fs.existsSync(outputFile)) {
+				fs.unlinkSync(outputFile);
+			}
+			// PIDファイルも削除
+			const pidFile = path.join(tempDir, "playwright-pid.txt");
+			if (fs.existsSync(pidFile)) {
+				fs.unlinkSync(pidFile);
+			}
 
-			const inputFile = path.join(tempDir, "song-input.json");
-			fs.writeFileSync(inputFile, JSON.stringify(songs), "utf8");
-
-			// ログ用の一時ファイル
-			const logFile = path.join(tempDir, "playwright-logs.json");
-			// 初期状態として空の配列を書き込む
+			// 入力ファイルを作成
+			fs.writeFileSync(inputFile, JSON.stringify(songs));
+			
+			// ログファイルを初期化
 			fs.writeFileSync(logFile, JSON.stringify([]), "utf8");
+			
+			// 曲数の情報をログに記録
+			const initialLog = `合計${songs.length}曲の検索を開始します`;
+			playwrightLogs.push(initialLog);
+			
+			// 現在のログをファイルに書き込む関数
+			const updateLogFile = () => {
+				try {
+					fs.writeFileSync(logFile, JSON.stringify(playwrightLogs), "utf8");
+				} catch (error) {
+					console.error("ログファイルの更新に失敗:", error);
+				}
+			};
+			
+			// 初期ログを書き込み
+			updateLogFile();
 
-			// 出力ファイルのパスを指定
-			const outputFile = path.join(tempDir, "jasrac-results.json");
+			// 検索スクリプトのパスを取得
+			const scriptPath = path.resolve(process.cwd(), "playwright/jasrac-collector.ts");
 
-			// Playwrightスクリプトのパス
-			const scriptPath = path.join(
-				process.cwd(),
-				"playwright",
-				"jasrac-collector.ts",
-			);
-
-			// Node.jsプロセスを起動してPlaywrightスクリプトを実行
-			const proc = spawn("npx", [
-				"tsx",
-				scriptPath,
-				"--input",
-				inputFile,
-				"--output",
-				outputFile,
-			]);
+			// コマンドを実行
+			const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
+			const args = ["tsx", scriptPath, "--input", inputFile, "--output", outputFile];
+			const proc = spawn(cmd, args);
 
 			// プロセスIDをファイルに保存（キャンセル機能のため）
 			if (proc.pid) {
@@ -66,16 +92,24 @@ export async function searchJasracInfo(
 				const logMessage = data.toString();
 				stdout += logMessage;
 				console.log("Playwright出力:", logMessage);
-				playwrightLogs.push(`[出力] ${logMessage}`);
+				
+				// 曲検索進捗情報を追加（例："〇〇の情報をJASRACで検索中..."）
+				const songProgressMatch = logMessage.match(/「(.+?)」の情報をJASRACで検索中/);
+				if (songProgressMatch && songProgressMatch[1]) {
+					const songTitle = songProgressMatch[1];
+					const songIndex = songs.findIndex(s => s.title === songTitle) + 1;
+					if (songIndex > 0) {
+						const progressLog = `${songIndex}曲目を検索中: ${songTitle} (${songIndex}/${songs.length}曲目)`;
+						playwrightLogs.push(progressLog);
+					} else {
+						playwrightLogs.push(`[出力] ${logMessage}`);
+					}
+				} else {
+					playwrightLogs.push(`[出力] ${logMessage}`);
+				}
 
 				// 現在のログをファイルに書き込む (リアルタイム更新用)
-				try {
-					const currentLogs = JSON.parse(fs.readFileSync(logFile, "utf8"));
-					currentLogs.push(`[出力] ${logMessage}`);
-					fs.writeFileSync(logFile, JSON.stringify(currentLogs), "utf8");
-				} catch (error) {
-					console.error("ログファイルの更新に失敗:", error);
-				}
+				updateLogFile();
 			});
 
 			proc.stderr.on("data", (data) => {
@@ -83,15 +117,9 @@ export async function searchJasracInfo(
 				stderr += errorMessage;
 				console.error("Playwright エラー:", errorMessage);
 				playwrightLogs.push(`[エラー] ${errorMessage}`);
-
-				// エラーログもファイルに書き込む
-				try {
-					const currentLogs = JSON.parse(fs.readFileSync(logFile, "utf8"));
-					currentLogs.push(`[エラー] ${errorMessage}`);
-					fs.writeFileSync(logFile, JSON.stringify(currentLogs), "utf8");
-				} catch (error) {
-					console.error("ログファイルの更新に失敗:", error);
-				}
+				
+				// エラーログも書き込む
+				updateLogFile();
 			});
 
 			proc.on("close", (code) => {
@@ -106,7 +134,6 @@ export async function searchJasracInfo(
 				}
 
 				// 結果ファイルを読み込む
-				const outputFile = path.join(tempDir, "jasrac-results.json");
 				if (fs.existsSync(outputFile)) {
 					try {
 						const results = JSON.parse(fs.readFileSync(outputFile, "utf8"));
@@ -240,7 +267,7 @@ function removeDuplicateWorkCodes(results: JasracInfo[]): JasracInfo[] {
 // ログ取得用のAPIエンドポイント
 export async function getPlaywrightLogs(): Promise<string[]> {
 	try {
-		const tempDir = path.join(process.cwd(), "temp");
+		const tempDir = path.resolve(os.tmpdir(), "jasrac-temp");
 		const logFile = path.join(tempDir, "playwright-logs.json");
 
 		if (fs.existsSync(logFile)) {

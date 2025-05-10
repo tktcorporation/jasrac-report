@@ -47,6 +47,7 @@ function App() {
 			setIsLoading(true);
 			setSearchError("");
 			setPlaywrightLogs([]); // ログをクリア
+			setJasracResults([]); // 前回の検索結果をクリア
 			setIsPollingLogs(true); // ログのポーリングを開始
 			setShowLogs(true); // ログ表示を有効化
 			setActiveTab("results"); // 検索実行時に検索結果タブに切り替え
@@ -337,7 +338,13 @@ function App() {
 						</div>
 					) : null}
 
-					<SearchResults results={jasracResults} isLoading={isLoading} />
+					<SearchResults 
+						results={jasracResults} 
+						isLoading={isLoading} 
+						playwrightLogs={playwrightLogs}
+						isPollingLogs={isPollingLogs}
+						setShowLogs={setShowLogs}
+					/>
 				</>
 			)}
 		</div>
