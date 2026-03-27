@@ -5,16 +5,9 @@
   "mode": "file-router",
   "tailwind": true,
   "packageManager": "pnpm",
-  "toolchain": "biome",
+  "toolchain": "vite-plus",
   "variableValues": {},
   "git": true,
   "version": 1,
-  "existingAddOns": [
-    "shadcn",
-    "netlify",
-    "tRPC",
-    "tanstack-query",
-    "table",
-    "start"
-  ]
+  "existingAddOns": ["shadcn", "netlify", "tRPC", "tanstack-query", "table", "start"]
 }

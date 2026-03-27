@@ -18,3 +18,18 @@ pnpm-workspace.yaml
 debug/
 output/
 temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# coverage
+coverage/
+
+# vite cache
+.vite/
+
+# vite-plus
+.vp/
