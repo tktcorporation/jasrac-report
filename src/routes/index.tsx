@@ -34,7 +34,6 @@ function App() {
         setPlaywrightLogs(logs);
 
         // 検索が完了したかどうかを確認するロジック
-        // 「JASRACデータ収集に成功しました」または「処理が完了しました」などの文字列があれば完了とみなす
         const isCompleted = logs.some(
           (log: string) =>
             log.includes("処理が完了しました") ||
@@ -43,7 +42,25 @@ function App() {
             log.includes("終了コード 0"),
         );
 
-        if (isCompleted && hasSearchStarted) {
+        // 検索が失敗したかどうかを確認するロジック
+        // 結果が0件で終了した場合やエラーで中断した場合を検出
+        const isFailed = logs.some(
+          (log: string) =>
+            log.includes("有効な曲情報が見つかりませんでした") ||
+            log.includes("JASRACデータ収集に失敗") ||
+            log.includes("キャンセルされました"),
+        );
+
+        if (hasSearchStarted && isFailed) {
+          console.log("ログから検索失敗を検出しました");
+          setSearchError(
+            "検索結果が見つかりませんでした。曲名やアーティスト名を確認してください。",
+          );
+          setIsPollingLogs(false);
+          setIsPollingResults(false);
+          setIsLoading(false);
+          setHasSearchStarted(false);
+        } else if (isCompleted && hasSearchStarted) {
           console.log("ログから検索完了を検出しました");
           // 検索結果のポーリングを開始
           setIsPollingResults(true);

@@ -10,10 +10,10 @@ import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
  */
 function ensurePlaywrightBrowser(): void {
   try {
-    const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
+    const cmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
     // playwright install --dry-run は存在しないため、
     // ブラウザパスを直接チェックする
-    const result = execFileSync(cmd, ["playwright", "install", "--help"], {
+    const result = execFileSync(cmd, ["exec", "playwright", "install", "--help"], {
       encoding: "utf8",
       timeout: 10000,
       stdio: ["pipe", "pipe", "pipe"],
@@ -119,8 +119,9 @@ export async function searchJasracInfo(songs: SongInfo[]): Promise<JasracInfo[]>
       const scriptPath = path.resolve(process.cwd(), "playwright/jasrac-collector.ts");
 
       // コマンドを実行
-      const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
-      const args = ["tsx", scriptPath, "--input", inputFile, "--output", outputFile];
+      // pnpm exec を使うことで mise 由来の npm 警告を回避する
+      const cmd = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+      const args = ["exec", "tsx", scriptPath, "--input", inputFile, "--output", outputFile];
       const proc = spawn(cmd, args);
 
       // プロセスIDをファイルに保存（キャンセル機能のため）
