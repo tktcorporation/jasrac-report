@@ -11,15 +11,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: setup node
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'package.json'
+          node-version-file: "package.json"
+          cache: "pnpm"
 
       - run: npm i -g @antfu/ni
-      
+
       - name: install dependencies
         run: nci
 
       - name: lint
         run: nr lint
+
+      - name: format check
+        run: nr fmt --check

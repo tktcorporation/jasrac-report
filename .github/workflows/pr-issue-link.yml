@@ -1,4 +1,4 @@
-name: 'PR Issue Link'
+name: "PR Issue Link"
 on:
   pull_request:
     types: [opened]
@@ -12,6 +12,6 @@ jobs:
     steps:
       - uses: tkt-actions/add-issue-links@v1.8.2
         with:
-          repo-token: '${{ secrets.GITHUB_TOKEN }}' # required
-          branch-prefix: '' # required
+          repo-token: "${{ secrets.GITHUB_TOKEN }}" # required
+          branch-prefix: "" # required
           link-style: comment

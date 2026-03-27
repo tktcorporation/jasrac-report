@@ -18,7 +18,7 @@ https://github.com/user-attachments/assets/26738d4d-5620-4ff8-bdfa-1ff6a5207ee0
 1. 「曲情報入力」タブで検索したい曲の情報を入力します
    - 個別入力: 各フィールドに情報を入力して「曲を追加」をクリック
    - 一括入力: 「テキストから一括追加」からテキスト形式で複数曲を追加
-      （形式: 曲名\t作詞者\t作曲者\tアーティスト）
+     （形式: 曲名\t作詞者\t作曲者\tアーティスト）
 
 2. 曲リストが作成されたら「JASRACで検索」ボタンをクリック
 
@@ -36,11 +36,13 @@ https://github.com/user-attachments/assets/26738d4d-5620-4ff8-bdfa-1ff6a5207ee0
 - **出力形式**: JSON/TSV形式で検索結果を保存（`/output`ディレクトリ）
 
 コマンドラインからの実行も可能です：
+
 ```bash
 pnpm jasrac-collector --input 入力ファイル.json --output 出力ファイル
 ```
 
 ダミーモードでのテスト実行：
+
 ```bash
 pnpm jasrac-collector --dummy
 ```
@@ -83,4 +85,3 @@ pnpm setup
 # 開発サーバーの起動
 pnpm dev
 ```
-

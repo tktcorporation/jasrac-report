@@ -10,11 +10,24 @@ dist-ssr
 *.env
 
 # pnpm
-pnpm-lock.yaml
-pnpm-workspace.yaml
 .pnpm-store
 
 # result
 debug/
 output/
 temp/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# coverage
+coverage/
+
+# vite cache
+.vite/
+
+# vite-plus
+.vp/

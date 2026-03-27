@@ -13,4 +13,4 @@
     "types": ["node", "playwright-core"]
   },
   "include": ["./**/*.ts"]
-} 
+}

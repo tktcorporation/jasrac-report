@@ -1,9 +1,4 @@
-import {
-	HeadContent,
-	Outlet,
-	Scripts,
-	createRootRouteWithContext,
-} from "@tanstack/react-router";
+import { HeadContent, Outlet, Scripts, createRootRouteWithContext } from "@tanstack/react-router";
 
 import TanstackQueryLayout from "../integrations/tanstack-query/layout";
 
@@ -15,51 +10,51 @@ import type { TRPCRouter } from "@/integrations/trpc/router";
 import type { TRPCOptionsProxy } from "@trpc/tanstack-react-query";
 
 interface MyRouterContext {
-	queryClient: QueryClient;
+  queryClient: QueryClient;
 
-	trpc: TRPCOptionsProxy<TRPCRouter>;
+  trpc: TRPCOptionsProxy<TRPCRouter>;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-	head: () => ({
-		meta: [
-			{
-				charSet: "utf-8",
-			},
-			{
-				name: "viewport",
-				content: "width=device-width, initial-scale=1",
-			},
-			{
-				title: "TanStack Start Starter",
-			},
-		],
-		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
-	}),
+  head: () => ({
+    meta: [
+      {
+        charSet: "utf-8",
+      },
+      {
+        name: "viewport",
+        content: "width=device-width, initial-scale=1",
+      },
+      {
+        title: "JASRAC 情報検索ツール",
+      },
+    ],
+    links: [
+      {
+        rel: "stylesheet",
+        href: appCss,
+      },
+    ],
+  }),
 
-	component: () => (
-		<RootDocument>
-			<Outlet />
-			<TanstackQueryLayout />
-		</RootDocument>
-	),
+  component: () => (
+    <RootDocument>
+      <Outlet />
+      <TanstackQueryLayout />
+    </RootDocument>
+  ),
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-	return (
-		<html lang="en">
-			<head>
-				<HeadContent />
-			</head>
-			<body>
-				{children}
-				<Scripts />
-			</body>
-		</html>
-	);
+  return (
+    <html lang="ja">
+      <head>
+        <HeadContent />
+      </head>
+      <body>
+        {children}
+        <Scripts />
+      </body>
+    </html>
+  );
 }
