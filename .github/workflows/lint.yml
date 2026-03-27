@@ -17,9 +17,12 @@ jobs:
           node-version-file: 'package.json'
 
       - run: npm i -g @antfu/ni
-      
+
       - name: install dependencies
         run: nci
 
       - name: lint
         run: nr lint
+
+      - name: format check
+        run: nr fmt --check

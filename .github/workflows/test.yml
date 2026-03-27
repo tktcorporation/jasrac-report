@@ -17,10 +17,10 @@ jobs:
           node-version-file: 'package.json'
 
       - run: npm i -g @antfu/ni
-      
+
       - name: install dependencies
         run: nci
-      
+
       - name: install playwright
         run: nlx playwright install
 
@@ -28,7 +28,7 @@ jobs:
         run: nlx playwright install-deps
 
       - name: test
-        run: nr test:vitest
+        run: nr test
 
   test-e2e:
     runs-on: ubuntu-22.04
@@ -43,7 +43,7 @@ jobs:
           node-version-file: 'package.json'
 
       - run: npm i -g @antfu/ni
-      
+
       - name: install dependencies
         run: nci
 
@@ -54,4 +54,4 @@ jobs:
         run: nlx playwright install-deps
 
       - name: test
-        run: nr test:e2e
+        run: nlx playwright test
