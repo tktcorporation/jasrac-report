@@ -10,8 +10,6 @@ dist-ssr
 *.env
 
 # pnpm
-pnpm-lock.yaml
-pnpm-workspace.yaml
 .pnpm-store
 
 # result

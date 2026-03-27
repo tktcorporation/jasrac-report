@@ -11,23 +11,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: setup node
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'package.json'
+          node-version: "22"
+          cache: "pnpm"
 
       - run: npm i -g @antfu/ni
 
-      - name: install dependencies
+      - name: Install dependencies
         run: nci
 
-      - name: install playwright
-        run: nlx playwright install
+      - name: Install Playwright
+        run: nlx playwright install chromium --with-deps
 
-      - name: install playwright deps
-        run: nlx playwright install-deps
-
-      - name: test
+      - name: Test
         run: nr test
 
   test-e2e:
@@ -37,21 +38,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: setup node
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: 'package.json'
+          node-version: "22"
+          cache: "pnpm"
 
       - run: npm i -g @antfu/ni
 
-      - name: install dependencies
+      - name: Install dependencies
         run: nci
 
-      - name: install playwright
-        run: nlx playwright install
+      - name: Install Playwright
+        run: nlx playwright install chromium --with-deps
 
-      - name: install playwright deps
-        run: nlx playwright install-deps
-
-      - name: test
+      - name: Test
         run: nlx playwright test
