@@ -10,33 +10,102 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as ApiSearchJasracRouteImport } from './routes/api.search-jasrac'
+import { Route as ApiPlaywrightLogsRouteImport } from './routes/api.playwright-logs'
+import { Route as ApiJasracResultsRouteImport } from './routes/api.jasrac-results'
+import { Route as ApiCancelSearchRouteImport } from './routes/api.cancel-search'
+import { Route as ApiTrpcSplatRouteImport } from './routes/api.trpc.$'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiSearchJasracRoute = ApiSearchJasracRouteImport.update({
+  id: '/api/search-jasrac',
+  path: '/api/search-jasrac',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPlaywrightLogsRoute = ApiPlaywrightLogsRouteImport.update({
+  id: '/api/playwright-logs',
+  path: '/api/playwright-logs',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiJasracResultsRoute = ApiJasracResultsRouteImport.update({
+  id: '/api/jasrac-results',
+  path: '/api/jasrac-results',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCancelSearchRoute = ApiCancelSearchRouteImport.update({
+  id: '/api/cancel-search',
+  path: '/api/cancel-search',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTrpcSplatRoute = ApiTrpcSplatRouteImport.update({
+  id: '/api/trpc/$',
+  path: '/api/trpc/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/api/cancel-search': typeof ApiCancelSearchRoute
+  '/api/jasrac-results': typeof ApiJasracResultsRoute
+  '/api/playwright-logs': typeof ApiPlaywrightLogsRoute
+  '/api/search-jasrac': typeof ApiSearchJasracRoute
+  '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/api/cancel-search': typeof ApiCancelSearchRoute
+  '/api/jasrac-results': typeof ApiJasracResultsRoute
+  '/api/playwright-logs': typeof ApiPlaywrightLogsRoute
+  '/api/search-jasrac': typeof ApiSearchJasracRoute
+  '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/api/cancel-search': typeof ApiCancelSearchRoute
+  '/api/jasrac-results': typeof ApiJasracResultsRoute
+  '/api/playwright-logs': typeof ApiPlaywrightLogsRoute
+  '/api/search-jasrac': typeof ApiSearchJasracRoute
+  '/api/trpc/$': typeof ApiTrpcSplatRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/api/cancel-search'
+    | '/api/jasrac-results'
+    | '/api/playwright-logs'
+    | '/api/search-jasrac'
+    | '/api/trpc/$'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/api/cancel-search'
+    | '/api/jasrac-results'
+    | '/api/playwright-logs'
+    | '/api/search-jasrac'
+    | '/api/trpc/$'
+  id:
+    | '__root__'
+    | '/'
+    | '/api/cancel-search'
+    | '/api/jasrac-results'
+    | '/api/playwright-logs'
+    | '/api/search-jasrac'
+    | '/api/trpc/$'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  ApiCancelSearchRoute: typeof ApiCancelSearchRoute
+  ApiJasracResultsRoute: typeof ApiJasracResultsRoute
+  ApiPlaywrightLogsRoute: typeof ApiPlaywrightLogsRoute
+  ApiSearchJasracRoute: typeof ApiSearchJasracRoute
+  ApiTrpcSplatRoute: typeof ApiTrpcSplatRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +117,51 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/search-jasrac': {
+      id: '/api/search-jasrac'
+      path: '/api/search-jasrac'
+      fullPath: '/api/search-jasrac'
+      preLoaderRoute: typeof ApiSearchJasracRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/playwright-logs': {
+      id: '/api/playwright-logs'
+      path: '/api/playwright-logs'
+      fullPath: '/api/playwright-logs'
+      preLoaderRoute: typeof ApiPlaywrightLogsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/jasrac-results': {
+      id: '/api/jasrac-results'
+      path: '/api/jasrac-results'
+      fullPath: '/api/jasrac-results'
+      preLoaderRoute: typeof ApiJasracResultsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cancel-search': {
+      id: '/api/cancel-search'
+      path: '/api/cancel-search'
+      fullPath: '/api/cancel-search'
+      preLoaderRoute: typeof ApiCancelSearchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/trpc/$': {
+      id: '/api/trpc/$'
+      path: '/api/trpc/$'
+      fullPath: '/api/trpc/$'
+      preLoaderRoute: typeof ApiTrpcSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  ApiCancelSearchRoute: ApiCancelSearchRoute,
+  ApiJasracResultsRoute: ApiJasracResultsRoute,
+  ApiPlaywrightLogsRoute: ApiPlaywrightLogsRoute,
+  ApiSearchJasracRoute: ApiSearchJasracRoute,
+  ApiTrpcSplatRoute: ApiTrpcSplatRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
