@@ -31,3 +31,8 @@ coverage/
 
 # vite-plus
 .vp/
+
+# playwright
+e2e/__screenshots__/
+test-results/
+playwright-report/

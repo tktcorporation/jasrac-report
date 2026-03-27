@@ -27,3 +27,30 @@ jobs:
 
       - name: Test
         run: nr test
+
+  test-e2e:
+    runs-on: ubuntu-22.04
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: "package.json"
+          cache: "pnpm"
+
+      - run: npm i -g @antfu/ni
+
+      - name: Install dependencies
+        run: nci
+
+      - name: Install Playwright
+        run: nlx playwright install chromium --with-deps
+
+      - name: E2E test
+        run: nr test:e2e

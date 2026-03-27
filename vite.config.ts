@@ -14,4 +14,7 @@ export default defineConfig({
     tsconfigPaths: true,
   },
   plugins: [tanstackStart(), react(), tailwindcss()],
+  test: {
+    exclude: ["e2e/**", "node_modules/**"],
+  },
 });
