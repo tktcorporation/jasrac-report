@@ -7,7 +7,8 @@
     "build": "vite build",
     "start": "node .output/server/index.mjs",
     "preview": "vite preview",
-    "test": "vitest run",
+    "test": "vitest run --passWithNoTests",
+    "test:e2e": "playwright test",
     "lint": "vp lint",
     "fmt": "vp fmt",
     "check": "vp check",
@@ -59,7 +60,7 @@
     "zod": "^3.24.4"
   },
   "devDependencies": {
-    "@playwright/test": "^1.52.0",
+    "@playwright/test": "^1.58.2",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/react": "^16.2.0",
     "@types/encoding-japanese": "^2.2.1",
@@ -71,7 +72,7 @@
     "typescript": "^5.7.2",
     "vite": "^8.0.0",
     "vite-plus": "latest",
-    "vitest": "^3.0.5",
+    "vitest": "^4.1.2",
     "web-vitals": "^4.2.4"
   },
   "engines": {
