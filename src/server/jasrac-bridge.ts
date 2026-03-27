@@ -1,12 +1,62 @@
-import { spawn } from "node:child_process";
+import { execFileSync, spawn } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { JasracInfo, SongInfo } from "../lib/jasrac-types";
 
+/**
+ * Playwright の Chromium ブラウザがインストール済みか確認する。
+ * 未インストールの場合は具体的な対処方法を含むエラーをスローする。
+ */
+function ensurePlaywrightBrowser(): void {
+  try {
+    const cmd = process.platform === "win32" ? "npx.cmd" : "npx";
+    // playwright install --dry-run は存在しないため、
+    // ブラウザパスを直接チェックする
+    const result = execFileSync(cmd, ["playwright", "install", "--help"], {
+      encoding: "utf8",
+      timeout: 10000,
+      stdio: ["pipe", "pipe", "pipe"],
+    });
+    // ヘルプが出力されれば playwright コマンドは利用可能
+    void result;
+  } catch {
+    // playwright コマンド自体が無い場合
+    throw new Error(
+      "Playwright がインストールされていません。\n" +
+        "以下のコマンドでセットアップしてください:\n" +
+        "  pnpm run setup",
+    );
+  }
+
+  // Chromium の実行ファイルが存在するか確認
+  const cacheDir = path.join(os.homedir(), ".cache", "ms-playwright");
+  if (!fs.existsSync(cacheDir)) {
+    throw new Error(
+      "Playwright のブラウザがインストールされていません。\n" +
+        "以下のコマンドを実行してください:\n" +
+        "  pnpm exec playwright install chromium",
+    );
+  }
+
+  // chromium_headless_shell-* ディレクトリが存在するか確認
+  const entries = fs.readdirSync(cacheDir);
+  const hasChromium = entries.some((e) => e.startsWith("chromium_headless_shell-"));
+  if (!hasChromium) {
+    throw new Error(
+      "Playwright の Chromium ブラウザが見つかりません。\n" +
+        "以下のコマンドを実行してください:\n" +
+        "  pnpm exec playwright install chromium",
+    );
+  }
+}
+
 // JASRACから曲情報を検索する関数
 export async function searchJasracInfo(songs: SongInfo[]): Promise<JasracInfo[]> {
-  // 実装する環境に応じて、以下の関数を変更する必要があります
+  // Playwright ブラウザの存在を検索開始前にチェックし、
+  // 未インストールの場合は長いプロセス起動を待たずに即座にエラーを返す
+  ensurePlaywrightBrowser();
+
   return new Promise((resolve, reject) => {
     try {
       console.log("検索開始:", songs);
